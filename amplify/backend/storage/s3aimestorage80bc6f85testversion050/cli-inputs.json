@@ -1,0 +1,12 @@
+{
+  "resourceName": "s3aimestorage80bc6f85testversion050",
+  "bucketName": "aime-storage-80bc6f85-test-version050",
+  "policyUUID": "82ca018f",
+  "storageAccess": "authAndGuest",
+  "guestAccess": [
+    "READ"
+  ],
+  "authAccess": [
+    "READ"
+  ]
+}

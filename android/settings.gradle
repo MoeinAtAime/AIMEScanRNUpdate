@@ -1,0 +1,43 @@
+// // pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
+// // plugins { id("com.facebook.react.settings") }
+// // extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
+// // rootProject.name = 'AIME'
+// // include ':app'
+// // includeBuild('../node_modules/@react-native/gradle-plugin')
+// // include ':biosensesignal-react-native-sdk:biosensesignal-sdk'
+
+
+// // React Native Gradle Settings plugin (RNGP) — required for autolinking
+// pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
+// plugins { id("com.facebook.react.settings") }
+// extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
+//   ex.autolinkLibrariesFromCommand()
+// }
+
+// rootProject.name = "AIME"
+// include(":app")
+
+// //// Example (adjust the relative path to your codebase):
+// includeBuild("../node_modules/@react-native/gradle-plugin")
+// include(":biosensesignal-react-native-sdk")
+// project(":biosensesignal-react-native-sdk").projectDir = file("../biosensesignal-react-native-sdk/android")
+
+
+
+// React Native Gradle Settings plugin (autolinking)
+pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
+plugins { id("com.facebook.react.settings") }
+extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
+  ex.autolinkLibrariesFromCommand()
+}
+
+// Makes RNGP resolvable on the classpath
+includeBuild("../node_modules/@react-native/gradle-plugin")
+
+rootProject.name = "AIME"
+include(":app")
+
+// If you include a local module, do it explicitly and ONLY if it’s a proper Android library:
+// include(":biosensesignal-react-native-sdk")
+include ':biosensesignal-react-native-sdk:biosensesignal-sdk'
+// project(":biosensesignal-react-native-sdk").projectDir = file("../biosensesignal-react-native-sdk/android")

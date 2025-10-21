@@ -1,0 +1,69 @@
+{
+  "version": "1",
+  "cognitoConfig": {
+    "identityPoolName": "testAuthIdentityPool",
+    "allowUnauthenticatedIdentities": false,
+    "resourceNameTruncated": "aimebda4efc3",
+    "userPoolName": "AIME",
+    "autoVerifiedAttributes": [
+      "email"
+    ],
+    "mfaConfiguration": "OFF",
+    "mfaTypes": [
+      "SMS Text Message"
+    ],
+    "smsAuthenticationMessage": "Your authentication code is {####}",
+    "smsVerificationMessage": "Your verification code is {####}",
+    "emailVerificationSubject": "Verification code for AIME",
+    "emailVerificationMessage": "Please use this code to proceed with the registration process or change your password.<br>\n<strong>Verification code: {####} </strong><br>\nReturn to the AIME app to enter your unique 6-digit code.<br><br>\n\n<strong>Did not request this? </strong><br>\nIf you do not have an AIME account, you can safely disregard this email. If you have an AIME account, please reset your password and change it to something you have not used before. You should also contact us immediately to ensure your account security.<br><br>\n\nPlease do not reply to this email, as it was sent from an unattended mailbox. If you have any questions, please contact <a href=\"mailto:support@aimescan.com\">support@aimescan.com</a>.<br><br>\nThank you\n",
+    "defaultPasswordPolicy": false,
+    "passwordPolicyMinLength": 8,
+    "passwordPolicyCharacters": [
+      "Requires Lowercase",
+      "Requires Numbers",
+      "Requires Symbols",
+      "Requires Uppercase"
+    ],
+    "requiredAttributes": [
+      "birthdate",
+      "gender"
+    ],
+    "aliasAttributes": [],
+    "userpoolClientGenerateSecret": false,
+    "userpoolClientRefreshTokenValidity": 30,
+    "userpoolClientWriteAttributes": [],
+    "userpoolClientReadAttributes": [],
+    "userpoolClientLambdaRole": "AIMEbda4efc3_userpoolclient_lambda_role",
+    "userpoolClientSetAttributes": false,
+    "sharedId": "bda4efc3",
+    "resourceName": "AIME",
+    "authSelections": "identityPoolAndUserPool",
+    "serviceName": "Cognito",
+    "usernameAttributes": [
+      "email"
+    ],
+    "useDefault": "manual",
+    "userPoolGroups": false,
+    "userPoolGroupList": [],
+    "adminQueries": false,
+    "thirdPartyAuth": false,
+    "authProviders": [],
+    "usernameCaseSensitive": false,
+    "useEnabledMfas": true,
+    "authRoleArn": {
+      "Fn::GetAtt": [
+        "AuthRole",
+        "Arn"
+      ]
+    },
+    "unauthRoleArn": {
+      "Fn::GetAtt": [
+        "UnauthRole",
+        "Arn"
+      ]
+    },
+    "breakCircularDependency": true,
+    "dependsOn": [],
+    "hostedUI": false
+  }
+}

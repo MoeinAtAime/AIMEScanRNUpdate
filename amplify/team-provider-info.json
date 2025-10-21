@@ -1,0 +1,26 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-aime-dev-878fb-authRole",
+      "UnauthRoleArn": "arn:aws:iam::430118856916:role/amplify-aime-dev-878fb-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::430118856916:role/amplify-aime-dev-878fb-authRole",
+      "Region": "us-east-1",
+      "DeploymentBucketName": "amplify-aime-dev-878fb-deployment",
+      "UnauthRoleName": "amplify-aime-dev-878fb-unauthRole",
+      "StackName": "amplify-aime-dev-878fb",
+      "StackId": "arn:aws:cloudformation:us-east-1:430118856916:stack/amplify-aime-dev-878fb/b3dc5c30-a3c6-11ef-b5bd-0ec3ca325e99",
+      "AmplifyAppId": "d4wsrcnmnat7u"
+    },
+    "categories": {
+      "auth": {
+        "AIME": {}
+      },
+      "api": {
+        "AIME": {}
+      },
+      "storage": {
+        "s3aimestorage80bc6f85testversion050": {}
+      }
+    }
+  }
+}

@@ -1,0 +1,51 @@
+type SDK @model @auth(rules: [{allow: public, operations: [read]}, {allow: owner, operations: [read]}, {allow: private, operations: [read]}]) {
+  id: ID!
+  SDKLk: String
+}
+
+type UserData @model @auth(rules: [{allow: public}, {allow: owner}, {allow: private}]) {
+  id: ID!
+  email: String
+  activationID: String
+  timeStamp: String
+  PULSE_RATE: String
+  PULSE_RATE_CONF_LEVEL: String
+  BLOOD_PRESSURE: String
+  HEMOGLOBIN: String
+  LF_HF: String
+  OXYGEN_SATURATION: String
+  STRESS_LEVEL: String
+  WELLNESS_INDEX: String
+  userIPAdd: String
+  userDeviceInfo: String
+  userDeviceInfoVersion: String
+  SDNN: String
+  SDNN_CONF_LEVEL: String
+  MEAN_RRI: String
+  MEAN_RRI_CONF_LEVEL: String
+  RESPIRATION_RATE: String
+  RESPIRATION_RATE_CONF_LEVEL: String
+  PRQ: String
+  PRQ_CONF_LEVEL: String
+  RRI: String
+  RRI_CONF_LEVEL: String
+  HEMOGLOBIN_A1C: String
+  PNS_INDEX: String
+  PNS_ZONE: String
+  RMSSD: String
+  SD1: String
+  SD2: String
+  SNS_INDEX: String
+  SNS_ZONE: String
+  STRESS_INDEX: String
+  WELLNESS_LEVEL: String
+  ASCVD_RISK: String
+  HEART_AGE: String
+  HIGH_BLOOD_PRESSURE_RISK: String
+  HIGH_FASTING_GLUCOSE_RISK: String
+  HIGH_HEMOGLOBIN_A1C_RISK: String
+  HIGH_TOTAL_CHOLESTEROL_RISK: String
+  LOW_HEMOGLOBIN_RISK: String
+  NORMALIZED_STRESS_INDEX: String
+}
+ 

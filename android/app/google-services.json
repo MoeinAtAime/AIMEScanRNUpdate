@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "837662632927",
+    "project_id": "aimescan",
+    "storage_bucket": "aimescan.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:837662632927:android:c4d965d6cc5af84868326a",
+        "android_client_info": {
+          "package_name": "com.aime"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-mC7StslEJBp0ESUjHzUGkk2lgn6VT0g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
