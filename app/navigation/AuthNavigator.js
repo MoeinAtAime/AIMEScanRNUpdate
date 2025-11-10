@@ -1,8 +1,8 @@
-// improved version of Auth Navigator
+//////////////Font Increase Limit Fix
 
-// NavigationContainer.js
+// AuthNavigator.js
 import React from 'react';
-import {Platform} from 'react-native';
+import {Platform, Text} from 'react-native';
 import {createStackNavigator} from '@react-navigation/stack';
 
 import RegisterScreen from '../screens/RegisterScreen';
@@ -20,19 +20,18 @@ const defaultScreenOptions = {
     backgroundColor: '#2196F3',
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
   headerTintColor: '#FFFFFF',
+  headerTitleAlign: 'center',
   headerTitleStyle: {
     fontWeight: '600',
     fontSize: 18,
+    includeFontPadding: false, // Fix for Android font padding
+    allowFontScaling: false, // Prevents scaling with system font size
   },
-  headerTitleAlign: 'center',
   ...(Platform.OS === 'ios' && {
     headerBackTitleVisible: false,
   }),
@@ -65,39 +64,72 @@ const AuthNavigator = () => (
       name="Log in"
       component={LoginScreen}
       options={{
-        headerTitle: 'Log In',
+        headerTitle: () => (
+          <Text
+            allowFontScaling={false}
+            style={{
+              fontSize: 18,
+              fontWeight: '600',
+              color: '#FFFFFF',
+            }}>
+            Log In
+          </Text>
+        ),
         gestureEnabled: false,
         headerBackButtonDisplayMode: 'minimal',
-        headerBackTitleVisible: false,
       }}
     />
     <Stack.Screen
       name="Confirmation"
       component={ConfirmationScreen}
       options={{
-        headerTitle: 'Verify Account',
+        headerTitle: () => (
+          <Text
+            allowFontScaling={false}
+            style={{
+              fontSize: 18,
+              fontWeight: '600',
+              color: '#FFFFFF',
+            }}>
+            Verify Account
+          </Text>
+        ),
         gestureEnabled: false,
       }}
     />
-    {/* <Stack.Screen
-      name="Register"
-      component={RegisterScreen}
-      options={{
-        headerTitle: 'Activate/Register',
-        gestureEnabled: false,
-      }}
-    /> */}
-
     <Stack.Screen
       name="NewPassword"
       component={NewPasswordScreen}
-      options={{headerTitle: 'Set New Password', gestureEnabled: false}}
+      options={{
+        headerTitle: () => (
+          <Text
+            allowFontScaling={false}
+            style={{
+              fontSize: 18,
+              fontWeight: '600',
+              color: '#FFFFFF',
+            }}>
+            Set New Password
+          </Text>
+        ),
+        gestureEnabled: false,
+      }}
     />
     <Stack.Screen
       name="Reset Password"
       component={ResetPasswordScreen}
       options={{
-        headerTitle: 'Reset Password',
+        headerTitle: () => (
+          <Text
+            allowFontScaling={false}
+            style={{
+              fontSize: 18,
+              fontWeight: '600',
+              color: '#FFFFFF',
+            }}>
+            Reset Password
+          </Text>
+        ),
         gestureEnabled: false,
       }}
     />

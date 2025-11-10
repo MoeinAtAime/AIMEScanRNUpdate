@@ -95,7 +95,7 @@ const fetchOlderResults = async selectedDate => {
         filter,
         limit: 1000,
       },
-      authMode: 'userPool', // 👈 Cognito Authentication
+      authMode: 'userPool', //  Cognito Authentication
     });
 
     // Extract results

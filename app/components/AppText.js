@@ -1,27 +1,27 @@
-// AppText - A custom Text component for consistent styling throughout the app
+/////////////////////////////////////Font Increase Limit Fix
+
+// AppText.tsx — A custom Text component for consistent styling throughout the app
 import React, {useState, useEffect} from 'react';
-import {Text, Dimensions, Platform} from 'react-native';
+import {Text, Dimensions, Platform, TextProps} from 'react-native';
 import defaultStyles from '../config/styles';
 
-/**
- * AppText - A responsive styled text component for consistent typography
- *
- * @param {React.ReactNode} children - The text content to display
- * @param {object} style - Additional custom styles for the text
- * @param {string} variant - Text style variant: "h1", "h2", "h3", "h4", "body", "caption", "small" (default: "body")
- * @param {string} weight - Font weight: "light", "normal", "medium", "semibold", "bold" (default: "normal")
- * @param {string} color - Text color key from colors config or direct color value
- * @param {string} align - Text alignment: "left", "center", "right", "justify" (default: "left")
- * @param {number} numberOfLines - Maximum number of lines to display
- * @param {boolean} adjustsFontSizeToFit - Whether to adjust font size to fit (iOS only)
- * @param {number} minimumFontScale - Minimum scale factor for font size adjustment (iOS only)
- * @param {boolean} allowFontScaling - Whether to respect user's font size settings (default: true)
- * @param {boolean} accessible - Whether the text is accessible (default: true)
- * @param {string} accessibilityRole - Accessibility role for screen readers
- *
- * @returns {JSX.Element} - Rendered Text component with responsive and platform-specific styling
- */
-const AppText = ({
+type AppTextProps = TextProps & {
+  children: React.ReactNode,
+  style?: any,
+  variant?: 'h1' | 'h2' | 'h3' | 'h4' | 'body' | 'caption' | 'small',
+  weight?: 'light' | 'normal' | 'medium' | 'semibold' | 'bold',
+  color?: string,
+  align?: 'left' | 'center' | 'right' | 'justify',
+  numberOfLines?: number,
+  adjustsFontSizeToFit?: boolean,
+  minimumFontScale?: number, // iOS only
+  allowFontScaling?: boolean,
+  maxFontSizeMultiplier?: number, // NEW: cap for font scaling
+  accessible?: boolean,
+  accessibilityRole?: TextProps['accessibilityRole'],
+};
+
+const AppText: React.FC<AppTextProps> = ({
   children,
   style = {},
   variant = 'body',
@@ -32,6 +32,7 @@ const AppText = ({
   adjustsFontSizeToFit = false,
   minimumFontScale = 0.8,
   allowFontScaling = true,
+  maxFontSizeMultiplier = 1.4, // default cap – scale up to 120%
   accessible = true,
   accessibilityRole,
   ...props
@@ -50,14 +51,12 @@ const AppText = ({
   const isMediumScreen = dimensions.width >= 375 && dimensions.width < 414;
   const isLargeScreen = dimensions.width >= 414;
 
-  // Base font scaling
-  const getScaledSize = size => {
+  const getScaledSize = (size: number) => {
     if (isSmallScreen) return size * 0.9;
     if (isMediumScreen) return size;
     return size * 1.05;
   };
 
-  // Text variant configurations
   const variants = {
     h1: {
       fontSize: getScaledSize(Platform.OS === 'ios' ? 32 : 30),
@@ -96,7 +95,6 @@ const AppText = ({
     },
   };
 
-  // Font weight configurations
   const fontWeights = {
     light: Platform.OS === 'ios' ? '300' : 'normal',
     normal: Platform.OS === 'ios' ? '400' : 'normal',
@@ -105,40 +103,29 @@ const AppText = ({
     bold: Platform.OS === 'ios' ? '700' : 'bold',
   };
 
-  // Get platform-specific font family
-  const getFontFamily = weight => {
-    if (Platform.OS === 'ios') {
-      return 'System';
-    } else {
-      // Android font families
-      switch (weight) {
-        case 'light':
-          return 'sans-serif-light';
-        case 'medium':
-        case 'semibold':
-          return 'sans-serif-medium';
-        case 'bold':
-          return 'sans-serif';
-        default:
-          return 'sans-serif';
-      }
+  const getFontFamily = (w: string) => {
+    if (Platform.OS === 'ios') return 'System';
+    switch (w) {
+      case 'light':
+        return 'sans-serif-light';
+      case 'medium':
+      case 'semibold':
+        return 'sans-serif-medium';
+      case 'bold':
+        return 'sans-serif';
+      default:
+        return 'sans-serif';
     }
   };
 
-  // Color resolution (support both color keys and direct colors)
-  const resolveColor = colorProp => {
+  const resolveColor = (colorProp?: string) => {
     if (!colorProp) return undefined;
-
-    // Check if it's a color key from defaultStyles or colors config
     if (defaultStyles.colors && defaultStyles.colors[colorProp]) {
       return defaultStyles.colors[colorProp];
     }
-
-    // Return as direct color value
     return colorProp;
   };
 
-  // Build responsive styles
   const currentVariant = variants[variant] || variants.body;
   const currentWeight = fontWeights[weight] || fontWeights.normal;
 
@@ -148,10 +135,8 @@ const AppText = ({
     fontFamily: getFontFamily(weight),
     textAlign: align,
     color: resolveColor(color),
-    // Android-specific improvements
     includeFontPadding: false,
     textAlignVertical: Platform.OS === 'android' ? 'center' : undefined,
-    // Ensure proper rendering on both platforms
     ...(Platform.OS === 'android' && {
       marginVertical: 0,
       paddingVertical: 0,
@@ -167,6 +152,9 @@ const AppText = ({
       }
       minimumFontScale={Platform.OS === 'ios' ? minimumFontScale : undefined}
       allowFontScaling={allowFontScaling}
+      maxFontSizeMultiplier={
+        allowFontScaling ? maxFontSizeMultiplier : undefined
+      }
       accessible={accessible}
       accessibilityRole={accessibilityRole}
       {...props}>

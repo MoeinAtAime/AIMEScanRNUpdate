@@ -1,3 +1,5 @@
+//////////////////////Font Increase Limit Fix
+
 import * as React from 'react';
 import {
   AlertCodes,
@@ -12,10 +14,25 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
+// Centralized caps for Dynamic Type
+const FONT_CAPS = {
+  value: 1.15, // limit value text scaling
+};
+
+// Simple responsive helpers
+const isSmallScreen = screenWidth < 375;
+const isTablet = screenWidth >= 768;
+const getScaledSize = base => {
+  if (isTablet) return base * 1.2;
+  if (isSmallScreen) return base * 0.9;
+  return base; // baseline ~375–414
+};
+
+// Icon size scales slightly with screen (not with font scaling)
+const ICON_SIZE = getScaledSize(24);
+
 /**
- * PulseRate - A component that displays pulse rate data if available and valid
- *
- * @returns {JSX.Element} - Rendered pulse rate text
+ * PulseRate - Displays pulse rate data if available and valid
  */
 export const PulseRate = React.memo(() => {
   const vitalSign = useVitalSigns();
@@ -47,30 +64,46 @@ export const PulseRate = React.memo(() => {
     }
   }, [sessionState]);
 
-  // More strict validation for actual numeric values
+  // Strict validation for numeric values
+  const numeric = Number(pulseRate);
   const hasValidValue =
     pulseRate &&
     pulseRate !== '--' &&
     pulseRate !== 'N/A' &&
     pulseRate !== '' &&
-    pulseRate !== 0 &&
-    !isNaN(Number(pulseRate)) &&
-    Number(pulseRate) > 0 &&
-    Number(pulseRate) < 300;
+    !isNaN(numeric) &&
+    numeric > 0 &&
+    numeric < 300;
 
   return (
-    <View style={styles.container}>
+    <View
+      style={styles.container}
+      accessible
+      accessibilityRole="text"
+      accessibilityLabel={
+        hasValidValue
+          ? `Pulse rate ${numeric} beats per minute`
+          : 'Pulse rate not available'
+      }>
       <View style={styles.contentContainer}>
         <View style={styles.valueContainer}>
           {hasValidValue ? (
-            <MaterialIcons name="favorite" size={24} color="#FF5252" />
+            <MaterialIcons name="favorite" size={ICON_SIZE} color="#FF5252" />
           ) : (
-            <MaterialIcons name="favorite-border" size={24} color="#000" />
+            <MaterialIcons
+              name="favorite-border"
+              size={ICON_SIZE}
+              color="#000"
+            />
           )}
 
           <Text
-            style={[styles.value, {color: hasValidValue ? '#FF5252' : '#999'}]}>
-            {hasValidValue ? `${pulseRate} bpm` : '--'}
+            style={[styles.value, {color: hasValidValue ? '#FF5252' : '#999'}]}
+            allowFontScaling
+            maxFontSizeMultiplier={FONT_CAPS.value}
+            numberOfLines={1}
+            ellipsizeMode="tail">
+            {hasValidValue ? `${numeric} bpm` : '--'}
           </Text>
         </View>
       </View>
@@ -98,10 +131,10 @@ const styles = StyleSheet.create({
       },
     }),
 
-    // Responsive width while maintaining original proportions
-    width: screenWidth * 0.31, // Scale with screen width
-    minWidth: 120, // Keep original minimum width
-    maxWidth: 160, // Reasonable maximum for large screens
+    // Responsive width while maintaining proportions
+    width: screenWidth * 0.31,
+    minWidth: 120,
+    maxWidth: 180, // bumped slightly to avoid truncation at larger sizes
   },
 
   contentContainer: {
@@ -111,21 +144,22 @@ const styles = StyleSheet.create({
   },
 
   value: {
-    fontSize: 15, // Keep original font size
+    fontSize: getScaledSize(15), // responsive base; capped by maxFontSizeMultiplier
     fontWeight: 'bold',
-    marginLeft: 6, // Keep original margin
-    minWidth: screenWidth * 0.18, // Responsive minimum width
+    marginLeft: 6,
+    minWidth: screenWidth * 0.18,
     textAlign: 'left',
 
-    // Platform-specific font adjustments
+    // Platform-specific font families
     ...Platform.select({
-      ios: {
-        fontFamily: 'System',
-      },
-      android: {
-        fontFamily: 'Roboto',
-      },
+      ios: {fontFamily: 'System'},
+      android: {fontFamily: 'Roboto'},
     }),
+
+    // Better Android text box rendering
+    includeFontPadding: false,
+    textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
+    lineHeight: getScaledSize(18),
   },
 
   valueContainer: {

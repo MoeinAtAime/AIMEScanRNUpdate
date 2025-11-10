@@ -1,3 +1,5 @@
+////////////////////Font Increase Limit Fix
+
 // DisclaimerScreen - Provides important legal information and disclaimers
 import React from 'react';
 import {
@@ -15,15 +17,19 @@ import colors from '../config/colors';
 
 const {width} = Dimensions.get('window');
 const isSmallScreen = width < 350;
+
+// Reusable text props to cap system font scaling
+const titleScaleProps = {allowFontScaling: true, maxFontSizeMultiplier: 1.25};
+const subtitleScaleProps = {allowFontScaling: true, maxFontSizeMultiplier: 1.2};
+const contentScaleProps = {allowFontScaling: true, maxFontSizeMultiplier: 1.15};
+
 function DisclaimerScreen() {
   const handleAIMePress = () => {
     Alert.alert(
       'AIME Says',
       'A gift from Alex, Chuck, Moein, and Charles.',
       [{text: 'OK'}],
-      {
-        cancelable: true, // Add this for better UX
-      },
+      {cancelable: true},
     );
   };
 
@@ -31,24 +37,44 @@ function DisclaimerScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
-      contentInsetAdjustmentBehavior="automatic" // Add this for iOS
+      contentInsetAdjustmentBehavior="automatic"
       showsVerticalScrollIndicator={false}>
       {/* App Logo at the Top */}
       <Image
         style={styles.logo}
         source={require('../assets/Aime_Blue_Transparent_72ppi.png')}
+        accessible
+        accessibilityLabel="AIME logo"
       />
-      <Text style={styles.title}>Disclosure</Text>
-      <Text style={styles.subtitle}>1. Medical Use Case</Text>
-      <Text style={styles.content}>
+
+      <Text
+        {...titleScaleProps}
+        style={styles.title}
+        accessibilityRole="header">
+        Disclosure
+      </Text>
+
+      <Text
+        {...subtitleScaleProps}
+        style={styles.subtitle}
+        accessibilityRole="header">
+        1. Medical Use Case
+      </Text>
+      <Text {...contentScaleProps} style={styles.content}>
         This app is intended to support general wellness and is not a substitute
         for professional medical advice, diagnosis, or treatment. Always consult
         with a qualified healthcare provider (Doctor) before making any medical
         decisions or starting any health-related program based on information
         provided by this app.
       </Text>
-      <Text style={styles.subtitle}>2. General Information</Text>
-      <Text style={styles.content}>
+
+      <Text
+        {...subtitleScaleProps}
+        style={styles.subtitle}
+        accessibilityRole="header">
+        2. General Information
+      </Text>
+      <Text {...contentScaleProps} style={styles.content}>
         AIME is an advanced artificial intelligence application that utilizes
         rPPG face-scanning technology to estimate vital signs based on an
         extensive data set. Vital signs are objective measurements of the
@@ -56,8 +82,14 @@ function DisclaimerScreen() {
         measurements are "vital" because their assessment is the critical first
         step in any clinical evaluation.
       </Text>
-      <Text style={styles.subtitle}>3. Accuracy and Limitations</Text>
-      <Text style={styles.content}>
+
+      <Text
+        {...subtitleScaleProps}
+        style={styles.subtitle}
+        accessibilityRole="header">
+        3. Accuracy and Limitations
+      </Text>
+      <Text {...contentScaleProps} style={styles.content}>
         While AIME employs state-of-the-art AI models and a vast dataset to
         estimate vital signs, it is essential to acknowledge that these readings
         are estimates and should not be used as a substitute for professional
@@ -70,8 +102,14 @@ function DisclaimerScreen() {
         replacement for medical advice, treatment, or professional healthcare
         assessment.
       </Text>
-      <Text style={styles.subtitle}>4. No Medical Advice</Text>
-      <Text style={styles.content}>
+
+      <Text
+        {...subtitleScaleProps}
+        style={styles.subtitle}
+        accessibilityRole="header">
+        4. No Medical Advice
+      </Text>
+      <Text {...contentScaleProps} style={styles.content}>
         The information provided by AIME is for informational and general
         wellness purposes only. The application does not offer medical
         diagnoses, treatments, or recommendations. Users should not interpret
@@ -79,8 +117,14 @@ function DisclaimerScreen() {
         making critical health decisions. Your health concerns should be
         addressed by consulting a qualified healthcare professional.
       </Text>
-      <Text style={styles.subtitle}>5. User Responsibility</Text>
-      <Text style={styles.content}>
+
+      <Text
+        {...subtitleScaleProps}
+        style={styles.subtitle}
+        accessibilityRole="header">
+        5. User Responsibility
+      </Text>
+      <Text {...contentScaleProps} style={styles.content}>
         By using AIME, the user acknowledges and agrees that: 1. The application
         is intended solely for informational and wellness purposes and is not a
         medical device. 2. The results provided by AIME are estimations and
@@ -91,8 +135,14 @@ function DisclaimerScreen() {
         for any inaccuracies, misinterpretations, or adverse outcomes resulting
         from the application's use.
       </Text>
-      <Text style={styles.subtitle}>6. Data Privacy and Security</Text>
-      <Text style={styles.content}>
+
+      <Text
+        {...subtitleScaleProps}
+        style={styles.subtitle}
+        accessibilityRole="header">
+        6. Data Privacy and Security
+      </Text>
+      <Text {...contentScaleProps} style={styles.content}>
         AIME prioritizes user data privacy and security. Any biometric data
         collected through its face-scanning technology is processed in
         accordance with applicable data protection regulations. No personally
@@ -100,8 +150,14 @@ function DisclaimerScreen() {
         user consent. Users are encouraged to review AIME's Privacy Policy for
         further details on data collection, storage, and protection measures.
       </Text>
-      <Text style={styles.subtitle}>7. Updates and Modifications</Text>
-      <Text style={styles.content}>
+
+      <Text
+        {...subtitleScaleProps}
+        style={styles.subtitle}
+        accessibilityRole="header">
+        7. Updates and Modifications
+      </Text>
+      <Text {...contentScaleProps} style={styles.content}>
         The developers of AIME continuously work to enhance the application's
         accuracy and functionality. As AI technology and medical understanding
         evolve, AIME may undergo updates, modifications, or enhancements. Users
@@ -109,14 +165,36 @@ function DisclaimerScreen() {
         improvements. The developers reserve the right to modify or discontinue
         the application without prior notice.
       </Text>
-      <Text style={styles.subtitle}>8. Agreement to Terms</Text>
 
-      <Text style={styles.content}>
+      <Text
+        {...subtitleScaleProps}
+        style={styles.subtitle}
+        accessibilityRole="header">
+        8. Agreement to Terms
+      </Text>
+      <Text {...contentScaleProps} style={styles.content}>
         Using AIME, the user acknowledges that they have read and understood
         this Disclosure and agree to its terms. Users who do not accept these
         terms should refrain from using the application. Users are encouraged to
-        contact AIME support team with questions or concerns.
+        contact the AIME support team with questions or concerns.
       </Text>
+
+      {/* Optional: fun easter-egg tap target */}
+      {/* <TouchableOpacity
+        onPress={handleAIMePress}
+        style={styles.hyperlinkContainer}
+        accessibilityRole="button"
+        accessibilityLabel="AIME Says">
+        <Text
+          {...contentScaleProps}
+          style={[
+            styles.content,
+            styles.hyperlink,
+            {color: colors.primaryColor},
+          ]}>
+          Tap here for a note from AIME
+        </Text>
+      </TouchableOpacity> */}
     </ScrollView>
   );
 }
@@ -124,12 +202,12 @@ function DisclaimerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: Platform.OS === 'android' ? 15 : 20, // Less padding on Android
+    padding: Platform.OS === 'android' ? 15 : 20,
     backgroundColor: colors.white,
   },
   contentContainer: {
-    padding: Platform.OS === 'android' ? 15 : 20, // Less padding on Android
-    paddingBottom: Platform.OS === 'android' ? 80 : 70, // More bottom padding on Android
+    padding: Platform.OS === 'android' ? 15 : 20,
+    paddingBottom: Platform.OS === 'android' ? 80 : 70,
   },
   logo: {
     width: Math.min(200, Platform.select({ios: 200, android: 180})),
@@ -137,7 +215,7 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     alignSelf: 'center',
     marginBottom: Platform.OS === 'ios' ? 20 : 18,
-    maxWidth: '80%', // Add responsive width
+    maxWidth: '80%',
   },
   title: {
     fontSize: Platform.select({
@@ -163,7 +241,7 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
     textAlignVertical: 'center',
     lineHeight: Platform.select({ios: 24, android: 22}),
-    paddingHorizontal: 5, // Add horizontal padding
+    paddingHorizontal: 5,
   },
   content: {
     fontSize: Platform.select({ios: 16, android: 15}),
@@ -172,18 +250,18 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
     textAlignVertical: 'center',
     marginBottom: Platform.OS === 'ios' ? 0 : 2,
-    paddingHorizontal: 2, // Add horizontal padding
+    paddingHorizontal: 2,
   },
   hyperlink: {
     textDecorationLine: 'underline',
-    includeFontPadding: false, // Add for Android
-    textAlignVertical: 'center', // Add for Android
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   hyperlinkContainer: {
-    paddingVertical: 0,
+    paddingVertical: 8,
     paddingHorizontal: 4,
     borderRadius: 4,
-    minHeight: 20, // Ensure minimum touch target
+    minHeight: 32,
     justifyContent: 'center',
     alignItems: 'center',
   },

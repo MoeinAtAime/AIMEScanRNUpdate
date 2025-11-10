@@ -1,4 +1,5 @@
-// improved version of welcome screen
+//Font Increase Limit Fix
+
 // WelcomeScreen.js
 import React, {useCallback, useState} from 'react';
 import {Image, StyleSheet, Text, View, Platform, StatusBar} from 'react-native';
@@ -6,7 +7,6 @@ import PropTypes from 'prop-types';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import AppButton from '../components/AppButton';
-import Screen from '../components/Screen';
 import colors from '../config/colors';
 
 // Pre-load the image for better performance
@@ -20,15 +20,10 @@ function WelcomeScreen({navigation}) {
     navigation.navigate('Log in');
   }, [navigation]);
 
-  // const handleRegister = useCallback(() => {
-  //   navigation.navigate('Register');
-  // }, [navigation]);
-
   const handleImageError = useCallback(() => {
     setImageError(true);
   }, []);
 
-  // Dynamic styles based on safe area insets
   const dynamicStyles = {
     container: {
       ...styles.container,
@@ -62,10 +57,20 @@ function WelcomeScreen({navigation}) {
           />
         ) : (
           <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>Unable to load logo</Text>
+            <Text
+              style={styles.errorText}
+              allowFontScaling={true}
+              maxFontSizeMultiplier={1.2}>
+              Unable to load logo
+            </Text>
           </View>
         )}
-        <Text style={styles.tagline}>Start Scanning For Your Health</Text>
+        <Text
+          style={styles.tagline}
+          allowFontScaling={true}
+          maxFontSizeMultiplier={1.2}>
+          Start Scanning For Your Health
+        </Text>
       </View>
 
       {/* Button Section */}
@@ -76,21 +81,23 @@ function WelcomeScreen({navigation}) {
           onPress={handleLogin}
           accessibilityLabel="Login to your account"
           accessibilityHint="Navigate to login screen"
+          size="large"
           customStyle={{
-            minHeight: 80,
-            paddingVertical: 20, // Increase vertical padding too
+            // ensure consistent height even with big fonts
+            minHeight: 56,
+            paddingVertical: 18,
           }}
           customTextStyle={{
-            fontSize: 20, // Increase from default 16
+            fontSize: 18,
           }}
         />
+        {/* Optionally another button */}
         {/* <AppButton
-          title="Activate"
-          color="secondaryColor"
-          onPress={handleRegister}
-          accessibilityLabel="Create new account"
-          accessibilityHint="Navigate to registration screen"
-        /> */}
+            title="Activate"
+            color="secondaryColor"
+            onPress={handleRegister}
+            size="large"
+          /> */}
       </View>
     </SafeAreaView>
   );

@@ -1,3 +1,4 @@
+////////////////////////////////Font Increase Limit Fix
 // ConfirmationScreen.js
 import React, {useState, useEffect} from 'react';
 import {
@@ -11,12 +12,21 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  Dimensions,
 } from 'react-native';
 import {confirmSignUp, resendSignUpCode} from 'aws-amplify/auth';
 import AppButton from '../components/AppButton';
 import colors from '../config/colors';
 
 const RESEND_COOLDOWN = 30;
+
+const {width} = Dimensions.get('window');
+const isSmallScreen = width < 350;
+
+// Unified scale caps
+const titleScaleProps = {allowFontScaling: true, maxFontSizeMultiplier: 1.25};
+const labelScaleProps = {allowFontScaling: true, maxFontSizeMultiplier: 1.2};
+const bodyScaleProps = {allowFontScaling: true, maxFontSizeMultiplier: 1.15};
 
 const ConfirmationScreen = ({navigation, route}) => {
   const {username} = route.params || {};
@@ -28,9 +38,7 @@ const ConfirmationScreen = ({navigation, route}) => {
   useEffect(() => {
     let timer;
     if (resendCooldown > 0) {
-      timer = setInterval(() => {
-        setResendCooldown(prev => prev - 1);
-      }, 1000);
+      timer = setInterval(() => setResendCooldown(prev => prev - 1), 1000);
     }
     return () => clearInterval(timer);
   }, [resendCooldown]);
@@ -40,14 +48,12 @@ const ConfirmationScreen = ({navigation, route}) => {
       Alert.alert('Missing Code', 'Please enter the confirmation code.');
       return;
     }
-
     setLoading(true);
     try {
       const {isSignUpComplete} = await confirmSignUp({
-        username: username.toLowerCase(),
-        confirmationCode: confirmationCode,
+        username: (username || '').toLowerCase(),
+        confirmationCode,
       });
-
       if (isSignUpComplete) {
         Alert.alert(
           'Success',
@@ -64,13 +70,9 @@ const ConfirmationScreen = ({navigation, route}) => {
 
   const handleResendCode = async () => {
     if (resendCooldown > 0) return;
-
     setLoading(true);
     try {
-      await resendSignUpCode({
-        username: username.toLowerCase(),
-      });
-
+      await resendSignUpCode({username: (username || '').toLowerCase()});
       setResendCooldown(RESEND_COOLDOWN);
       Alert.alert(
         'Code Sent',
@@ -99,17 +101,30 @@ const ConfirmationScreen = ({navigation, route}) => {
             style={styles.logo}
             source={require('../assets/Aime_Blue_Transparent_72ppi.png')}
             resizeMode="contain"
+            accessible
+            accessibilityLabel="AIME logo"
           />
         </View>
 
         <View style={styles.contentContainer}>
-          <Text style={styles.title}>Verify Your Account</Text>
-          <Text style={styles.subtitle}>
+          <Text
+            {...titleScaleProps}
+            style={styles.title}
+            accessibilityRole="header">
+            Verify Your Account
+          </Text>
+
+          <Text {...labelScaleProps} style={styles.subtitle}>
             We've sent a verification code to{'\n'}
-            <Text style={styles.email}>{username}</Text>
+            {!!username && (
+              <Text {...labelScaleProps} style={styles.email}>
+                {username}
+              </Text>
+            )}
           </Text>
 
           <TextInput
+            {...bodyScaleProps}
             placeholder="Enter 6-digit code"
             placeholderTextColor={colors.medium}
             value={confirmationCode}
@@ -118,20 +133,33 @@ const ConfirmationScreen = ({navigation, route}) => {
             keyboardType="number-pad"
             maxLength={6}
             editable={!loading}
+            accessible
+            accessibilityLabel="Enter 6 digit verification code"
+            returnKeyType="done"
+            onSubmitEditing={handleConfirmation}
           />
 
+          {/* Ensure AppButton's internal Text uses allowFontScaling/maxFontSizeMultiplier too */}
           <AppButton
             title={loading ? 'Verifying...' : 'Verify Account'}
             onPress={handleConfirmation}
             disabled={loading || !confirmationCode}
             style={styles.button}
+            // textProps={labelScaleProps} // uncomment if your AppButton supports passing text props
           />
 
           <TouchableOpacity
             onPress={handleResendCode}
             disabled={resendCooldown > 0 || loading}
-            style={styles.resendButton}>
+            style={styles.resendButton}
+            accessibilityRole="button"
+            accessibilityLabel={
+              resendCooldown > 0
+                ? `Resend code in ${resendCooldown} seconds`
+                : 'Resend verification code'
+            }>
             <Text
+              {...labelScaleProps}
               style={[
                 styles.resendText,
                 (resendCooldown > 0 || loading) && styles.resendTextDisabled,
@@ -144,8 +172,12 @@ const ConfirmationScreen = ({navigation, route}) => {
 
           <TouchableOpacity
             onPress={() => navigation.navigate('Login')}
-            style={styles.backButton}>
-            <Text style={styles.backText}>Back to Login</Text>
+            style={styles.backButton}
+            accessibilityRole="button"
+            accessibilityLabel="Back to Login">
+            <Text {...labelScaleProps} style={styles.backText}>
+              Back to Login
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -154,6 +186,7 @@ const ConfirmationScreen = ({navigation, route}) => {
 };
 
 const styles = StyleSheet.create({
+  // Layout
   container: {
     flex: 1,
     backgroundColor: colors.light,
@@ -161,25 +194,30 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 20,
-    paddingBottom: Platform.OS === 'android' ? 40 : 20, // Extra padding on Android
+    paddingBottom: Platform.OS === 'android' ? 40 : 20,
   },
   logoContainer: {
     alignItems: 'center',
-    marginTop: Platform.OS === 'ios' ? 40 : 30, // Less margin on Android
+    marginTop: Platform.OS === 'ios' ? 40 : 30,
     marginBottom: Platform.OS === 'ios' ? 30 : 25,
   },
   logo: {
     width: Math.min(250, Platform.select({ios: 250, android: 230})),
     height: Platform.select({ios: 154, android: 145}),
-    maxWidth: '90%', // Add responsive width
+    maxWidth: '90%',
   },
   contentContainer: {
     flex: 1,
     alignItems: 'center',
-    paddingHorizontal: Platform.OS === 'android' ? 15 : 20, // Less padding on Android
+    paddingHorizontal: Platform.OS === 'android' ? 15 : 20,
   },
+
+  // Typography
   title: {
-    fontSize: Platform.select({ios: 28, android: 26}), // Slightly smaller on Android
+    fontSize: Platform.select({
+      ios: isSmallScreen ? 26 : 28,
+      android: isSmallScreen ? 24 : 26,
+    }),
     fontWeight: 'bold',
     color: colors.dark,
     marginBottom: 10,
@@ -189,11 +227,11 @@ const styles = StyleSheet.create({
     maxWidth: '90%',
   },
   subtitle: {
-    fontSize: Platform.select({ios: 16, android: 15}), // Slightly smaller on Android
+    fontSize: Platform.select({ios: 16, android: 15}),
     color: colors.medium,
     textAlign: 'center',
     marginBottom: 30,
-    lineHeight: Platform.select({ios: 22, android: 20}), // Adjust line height
+    lineHeight: Platform.select({ios: 22, android: 20}),
     includeFontPadding: false,
     textAlignVertical: 'center',
     maxWidth: '95%',
@@ -201,9 +239,11 @@ const styles = StyleSheet.create({
   email: {
     color: colors.primaryColor,
     fontWeight: '600',
-    includeFontPadding: false, // Add for Android
-    textAlignVertical: 'center', // Add for Android
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
+
+  // Input
   input: {
     backgroundColor: colors.white,
     borderColor: colors.mediumColor,
@@ -211,26 +251,28 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 15,
     marginBottom: 20,
-    fontSize: 18,
+    fontSize: Platform.select({ios: 18, android: 17}),
     color: colors.dark,
     width: '100%',
     maxWidth: 300,
     textAlign: 'center',
     letterSpacing: 5,
-    includeFontPadding: false, // Add for Android
-    textAlignVertical: 'center', // Add for Android
-    minHeight: 56, // Add minimum height for consistency
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    minHeight: 56,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
   },
+
+  // Buttons/links
   button: {
     width: '100%',
     maxWidth: 300,
     marginBottom: 20,
-    minHeight: 50, // Add minimum height
+    minHeight: 50,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
@@ -240,33 +282,33 @@ const styles = StyleSheet.create({
   resendButton: {
     padding: 10,
     marginBottom: 15,
-    minHeight: 44, // Add minimum touch target
-    justifyContent: 'center', // Add for better alignment
-    alignItems: 'center', // Add for better alignment
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   resendText: {
     color: colors.primaryColor,
-    fontSize: 16,
+    fontSize: Platform.select({ios: 16, android: 15}),
     textDecorationLine: 'underline',
-    includeFontPadding: false, // Add for Android
-    textAlignVertical: 'center', // Add for Android
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   resendTextDisabled: {
     color: colors.medium,
     textDecorationLine: 'none',
-    opacity: Platform.select({ios: 0.6, android: 0.5}), // Different opacity for platforms
+    opacity: Platform.select({ios: 0.6, android: 0.5}),
   },
   backButton: {
     padding: 10,
-    minHeight: 44, // Add minimum touch target
-    justifyContent: 'center', // Add for better alignment
-    alignItems: 'center', // Add for better alignment
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   backText: {
     color: colors.primaryColor,
-    fontSize: 16,
-    includeFontPadding: false, // Add for Android
-    textAlignVertical: 'center', // Add for Android
+    fontSize: Platform.select({ios: 16, android: 15}),
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
 });
 

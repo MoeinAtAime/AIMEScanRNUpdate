@@ -1,5 +1,9 @@
-// // Fetching the user profile information API
+// // // Fetching the user profile information API
 
+///////////Update to include phone number normalization
+
+// Fetching / updating the user profile information API
+// app/api/userApi.js
 import {fetchUserAttributes, updateUserAttribute} from 'aws-amplify/auth';
 
 export class UserApiService {
@@ -19,6 +23,53 @@ export class UserApiService {
     } catch (error) {
       console.error(
         '💥 [USER API ERROR] Failed to fetch user attributes:',
+        error,
+      );
+      this.handleError(error);
+      throw error;
+    }
+  }
+
+  // --- Phone helpers (JS) ---
+  static toE164(raw, defaultCountry = '+1') {
+    if (!raw) return '';
+    const digits = String(raw).replace(/[^\d+]/g, '');
+
+    if (digits.startsWith('+')) return digits; // Already +<digits>
+    if (defaultCountry === '+1' && /^\d{10}$/.test(digits))
+      return `${defaultCountry}${digits}`;
+    if (defaultCountry === '+1' && /^1\d{10}$/.test(digits))
+      return `+${digits}`;
+    return `${defaultCountry}${digits}`; // Fallback
+  }
+
+  /**
+   * Optional phone update. Skips if empty. No verification step.
+   * Ensure phone verification is disabled in Cognito User Pool if you don't want code prompts.
+   */
+  static async updatePhoneNumber(rawPhone, defaultCountry = '+1') {
+    const value = (rawPhone || '').trim();
+    if (!value) {
+      console.log('ℹ️ [USER UPDATE] phone_number empty -> skipping');
+      return {skipped: true};
+    }
+    const e164 = this.toE164(value, defaultCountry);
+
+    console.log('🔄 [USER UPDATE] Updating single attribute: phone_number');
+    try {
+      const start = Date.now();
+      const result = await updateUserAttribute({
+        userAttribute: {attributeKey: 'phone_number', value: e164},
+      });
+      console.log(
+        '✅ [USER UPDATE SUCCESS] phone_number in',
+        Date.now() - start,
+        'ms',
+      );
+      return result;
+    } catch (error) {
+      console.error(
+        '💥 [USER UPDATE ERROR] Failed to update phone_number:',
         error,
       );
       this.handleError(error);
@@ -71,7 +122,8 @@ export class UserApiService {
         updatedKeys.push(key);
       } catch (error) {
         console.error(`❌ [USER UPDATE ERROR] ${key}:`, error);
-        failures.push({key, message: error?.message || String(error)});
+        const message = error && error.message ? error.message : String(error); // ✅ JS-safe
+        failures.push({key, message});
       }
     }
     if (failures.length) {
@@ -83,17 +135,16 @@ export class UserApiService {
   }
 
   static async refreshUserAttributes() {
-    // With no cache, refresh is just a fetch
     return await this.fetchAttributes();
   }
 
   static handleError(error) {
-    if (error.code === 'NetworkError') {
+    if (error && error.code === 'NetworkError') {
       throw new Error(
         'Network connection issue. Please check your internet connection.',
       );
     }
-    if (error.code === 'InvalidParameterException') {
+    if (error && error.code === 'InvalidParameterException') {
       throw new Error(
         'Invalid input provided. Please check your data and try again.',
       );

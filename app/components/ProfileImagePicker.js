@@ -1,3 +1,5 @@
+/////////////////////////////////////Font Increase Limit Fix
+
 // ProfileImagePicker.js
 import React, {useState, useEffect} from 'react';
 import {
@@ -5,10 +7,9 @@ import {
   Image,
   TouchableOpacity,
   StyleSheet,
-  Text,
-  Alert,
   Platform,
   Dimensions,
+  Alert,
 } from 'react-native';
 import PropTypes from 'prop-types';
 import {launchImageLibrary} from 'react-native-image-picker';
@@ -16,6 +17,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import colors from '../config/colors';
 import maleAvatar from '../assets/male-transparent.png';
 import femaleAvatar from '../assets/female-transparent.png';
+
+import AppText from '../components/AppText'; // ← Make sure this path is correct
 
 const PROFILE_IMAGE_KEY = 'user_profile_image';
 
@@ -54,7 +57,6 @@ const ProfileImagePicker = ({
     return baseSize * 1.1;
   };
 
-  // Size configurations
   const sizeConfigs = {
     small: {
       avatarSize: getScaledSize(80),
@@ -90,7 +92,6 @@ const ProfileImagePicker = ({
 
   const currentConfig = sizeConfigs[size] || sizeConfigs.medium;
 
-  // Border radius configurations
   const borderRadiusConfigs = {
     circle: currentConfig.avatarSize / 2,
     rounded: currentConfig.avatarSize / 8,
@@ -100,7 +101,6 @@ const ProfileImagePicker = ({
   const currentBorderRadius =
     borderRadiusConfigs[borderStyle] || borderRadiusConfigs.circle;
 
-  // Theme configurations
   const themes = {
     light: {
       backgroundColor: colors.light || '#f8f9fa',
@@ -124,7 +124,7 @@ const ProfileImagePicker = ({
 
   const currentTheme = themes[theme] || themes.light;
 
-  // Load profile image on component mount
+  // Load profile image on mount
   useEffect(() => {
     const loadProfileImage = async () => {
       try {
@@ -143,17 +143,14 @@ const ProfileImagePicker = ({
     loadProfileImage();
   }, [onImageSelected]);
 
-  // Handle selectedImage prop changes (for delete functionality)
+  // Handle selectedImage prop changes
   useEffect(() => {
     if (selectedImage === null) {
-      // Clear the image when selectedImage is set to null
       setProfileImage(null);
-      // Also clear from AsyncStorage
       AsyncStorage.removeItem(PROFILE_IMAGE_KEY).catch(error => {
         console.error('Error removing profile image from storage:', error);
       });
     } else if (selectedImage && selectedImage !== profileImage?.uri) {
-      // Update when selectedImage changes to a new value
       setProfileImage({uri: selectedImage});
     }
   }, [selectedImage, profileImage?.uri]);
@@ -164,7 +161,7 @@ const ProfileImagePicker = ({
     const options = {
       mediaType: 'photo',
       quality: 0.7,
-      maxWidth: currentConfig.avatarSize * 2, // Dynamic max size based on avatar size
+      maxWidth: currentConfig.avatarSize * 2,
       maxHeight: currentConfig.avatarSize * 2,
       includeBase64: false,
     };
@@ -182,16 +179,13 @@ const ProfileImagePicker = ({
       }
 
       if (result.assets && result.assets.length > 0) {
-        const selectedImage = result.assets[0];
+        const selectedAsset = result.assets[0];
         const imageUri =
           Platform.OS === 'ios'
-            ? selectedImage.uri.replace('file://', '')
-            : selectedImage.uri;
+            ? selectedAsset.uri.replace('file://', '')
+            : selectedAsset.uri;
 
-        // Save image URI to local storage
         await AsyncStorage.setItem(PROFILE_IMAGE_KEY, imageUri);
-
-        // Update state and notify parent
         setProfileImage({uri: imageUri});
         if (onImageSelected) {
           onImageSelected(imageUri);
@@ -219,13 +213,9 @@ const ProfileImagePicker = ({
           style: 'destructive',
           onPress: async () => {
             try {
-              // Remove from AsyncStorage
               await AsyncStorage.removeItem(PROFILE_IMAGE_KEY);
-
-              // Update state
               setProfileImage(null);
 
-              // Notify parent
               if (onImageSelected) {
                 onImageSelected(null);
               }
@@ -239,17 +229,14 @@ const ProfileImagePicker = ({
     );
   };
 
-  // Determine the image source
   const imageSource = profileImage
     ? profileImage
     : gender === 'Female'
     ? femaleAvatar
     : maleAvatar;
 
-  // Determine if we should show the upload icon (only when using default avatar and editable)
   const showUploadIcon = !profileImage && editable;
 
-  // Dynamic styles based on screen size, platform, and theme
   const responsiveStyles = StyleSheet.create({
     container: {
       alignItems: 'center',
@@ -264,15 +251,10 @@ const ProfileImagePicker = ({
       borderWidth: currentConfig.borderWidth,
       borderColor: currentTheme.borderColor,
       position: 'relative',
-      // overflow: 'hidden',
-      // Platform-specific shadow
       ...Platform.select({
         ios: {
           shadowColor: '#000',
-          shadowOffset: {
-            width: 0,
-            height: 2,
-          },
+          shadowOffset: {width: 0, height: 2},
           shadowOpacity: 0.1,
           shadowRadius: 4,
         },
@@ -302,16 +284,11 @@ const ProfileImagePicker = ({
       alignItems: 'center',
       borderWidth: currentConfig.borderWidth,
       borderColor: currentTheme.backgroundColor,
-      zIndex: 10, // ADD THIS LINE
-
-      // Platform-specific shadow
+      zIndex: 10,
       ...Platform.select({
         ios: {
           shadowColor: '#000',
-          shadowOffset: {
-            width: 0,
-            height: 1,
-          },
+          shadowOffset: {width: 0, height: 1},
           shadowOpacity: 0.2,
           shadowRadius: 2,
         },
@@ -338,14 +315,10 @@ const ProfileImagePicker = ({
       alignItems: 'center',
       borderWidth: currentConfig.borderWidth,
       borderColor: currentTheme.backgroundColor,
-      // Platform-specific shadow
       ...Platform.select({
         ios: {
           shadowColor: '#000',
-          shadowOffset: {
-            width: 0,
-            height: 2,
-          },
+          shadowOffset: {width: 0, height: 2},
           shadowOpacity: 0.25,
           shadowRadius: 3.84,
         },
@@ -407,7 +380,12 @@ const ProfileImagePicker = ({
               responsiveStyles.uploadIconContainer,
               customStyles.uploadIcon,
             ]}>
-            <Text style={responsiveStyles.uploadIcon}>📷</Text>
+            <AppText
+              style={responsiveStyles.uploadIcon}
+              allowFontScaling={false}
+              maxFontSizeMultiplier={1}>
+              📷
+            </AppText>
           </View>
         )}
 
@@ -420,14 +398,21 @@ const ProfileImagePicker = ({
             accessibilityRole="button"
             accessibilityHint="Double tap to remove your current profile picture"
             hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-            <Text style={responsiveStyles.deleteIcon}>×</Text>
+            <AppText
+              style={responsiveStyles.deleteIcon}
+              allowFontScaling={false}
+              maxFontSizeMultiplier={1}>
+              ×
+            </AppText>
           </TouchableOpacity>
         )}
       </TouchableOpacity>
 
       {showHint && (
-        <Text
+        <AppText
           style={[responsiveStyles.hint, customStyles.hint]}
+          allowFontScaling={true}
+          maxFontSizeMultiplier={1.2}
           accessible={true}
           accessibilityLabel={
             profileImage ? 'Tap to change photo' : 'Tap to add photo'
@@ -437,7 +422,7 @@ const ProfileImagePicker = ({
               ? 'Tap to change photo'
               : 'Tap to add photo'
             : 'Profile photo'}
-        </Text>
+        </AppText>
       )}
     </View>
   );

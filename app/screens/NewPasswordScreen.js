@@ -1,5 +1,5 @@
+///////////////////////////Font Increase Limit Fix
 // // // NewPasswordScreen.js
-
 import React, {useState} from 'react';
 import {
   View,
@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
   TouchableOpacity,
+  Dimensions,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {confirmSignIn} from 'aws-amplify/auth';
@@ -19,6 +20,14 @@ import AppButton from '../components/AppButton';
 import colors from '../config/colors';
 
 const PASSWORD_MIN = 8; // Align with your user-pool policy
+
+const {width} = Dimensions.get('window');
+const isSmallScreen = width < 350;
+
+// Unified scale caps
+const titleScaleProps = {allowFontScaling: true, maxFontSizeMultiplier: 1.25};
+const labelScaleProps = {allowFontScaling: true, maxFontSizeMultiplier: 1.2};
+const bodyScaleProps = {allowFontScaling: true, maxFontSizeMultiplier: 1.15};
 
 export default function NewPasswordScreen({route, navigation}) {
   const {username, rememberMe} = route.params || {};
@@ -78,12 +87,26 @@ export default function NewPasswordScreen({route, navigation}) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Set a new password</Text>
-      {!!username && <Text style={styles.subtitle}>for {username}</Text>}
+      <Text
+        {...titleScaleProps}
+        style={styles.title}
+        accessibilityRole="header">
+        Set a new password
+      </Text>
+
+      {!!username && (
+        <Text
+          {...labelScaleProps}
+          style={styles.subtitle}
+          accessibilityLabel={`for ${username}`}>
+          for {username}
+        </Text>
+      )}
 
       {/* New Password */}
       <View style={styles.inputWrap}>
         <TextInput
+          {...bodyScaleProps}
           placeholder="New password"
           placeholderTextColor={colors.medium}
           secureTextEntry={!showNew}
@@ -94,6 +117,9 @@ export default function NewPasswordScreen({route, navigation}) {
           onChangeText={setNewPassword}
           style={[styles.input, styles.inputWithIcon]}
           returnKeyType="next"
+          accessible
+          accessibilityLabel="Enter new password"
+          // Tip: if you ever use multiline, consider numberOfLines & minHeight
         />
         <TouchableOpacity
           onPress={() => setShowNew(s => !s)}
@@ -111,6 +137,7 @@ export default function NewPasswordScreen({route, navigation}) {
       {/* Confirm Password */}
       <View style={styles.inputWrap}>
         <TextInput
+          {...bodyScaleProps}
           placeholder="Confirm new password"
           placeholderTextColor={colors.medium}
           secureTextEntry={!showConfirm}
@@ -122,6 +149,8 @@ export default function NewPasswordScreen({route, navigation}) {
           style={[styles.input, styles.inputWithIcon]}
           returnKeyType="done"
           onSubmitEditing={submit}
+          accessible
+          accessibilityLabel="Confirm new password"
         />
         <TouchableOpacity
           onPress={() => setShowConfirm(s => !s)}
@@ -136,11 +165,15 @@ export default function NewPasswordScreen({route, navigation}) {
         </TouchableOpacity>
       </View>
 
+      {/* NOTE: Ensure AppButton's internal Text uses allowFontScaling + a cap.
+         If your AppButton accepts textProps, pass {...labelScaleProps} there. */}
       <AppButton
         title={busy ? 'Saving...' : 'Save & Continue'}
         onPress={submit}
         disabled={busy}
+        // textProps={labelScaleProps} // uncomment if your AppButton supports this
       />
+
       {busy && (
         <ActivityIndicator
           size="large"
@@ -160,16 +193,24 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 80 : 40,
   },
   title: {
-    fontSize: 22,
+    fontSize: Platform.select({
+      ios: isSmallScreen ? 20 : 22,
+      android: isSmallScreen ? 18 : 20,
+    }),
     fontWeight: '600',
     textAlign: 'center',
     color: colors.dark,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    marginBottom: 6,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: Platform.select({ios: 14, android: 13}),
     textAlign: 'center',
     color: colors.medium,
     marginBottom: 20,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   inputWrap: {
     position: 'relative',
@@ -181,9 +222,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     padding: 15,
-    fontSize: 16,
+    fontSize: Platform.select({ios: 16, android: 15}),
     color: colors.dark,
     minHeight: 50,
+    includeFontPadding: false, // helps Android align text vertically
+    textAlignVertical: 'center',
   },
   inputWithIcon: {
     paddingRight: 48, // space for the eye button

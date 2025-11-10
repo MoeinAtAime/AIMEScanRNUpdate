@@ -1,3 +1,4 @@
+////////////////////////Font Increase Limit Fix
 import * as React from 'react';
 import {
   StyleSheet,
@@ -15,19 +16,50 @@ type StartStopButtonProps = {
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
+// Responsive helpers
+const isSmallScreen = screenWidth < 375;
+const isTablet = screenWidth >= 768;
+const getScaledSize = base => {
+  if (isTablet) return base * 1.2;
+  if (isSmallScreen) return base * 0.9;
+  return base;
+};
+
+// Cap display size scaling
+const FONT_CAPS = {
+  buttonLabel: 1.15,
+};
+
 export const StartStopButton = (props: StartStopButtonProps) => {
+  const label = props.isStop ? 'STOP' : 'START';
+  const accessibleLabel = props.isStop
+    ? 'Stop measurement'
+    : 'Start measurement';
+
   return (
     <TouchableOpacity
       style={[styles.startButton, !props.isEnabled && styles.disabledButton]}
       disabled={!props.isEnabled}
-      onPress={() => props.onClick()}
-      activeOpacity={0.8}>
+      onPress={props.onClick}
+      activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={accessibleLabel}
+      accessibilityState={{disabled: !props.isEnabled}}
+      accessibilityHint={
+        props.isStop
+          ? 'Stops the current session'
+          : 'Starts a new measurement session'
+      }>
       <Text
         style={[
           styles.startButtonTitle,
           !props.isEnabled && styles.disabledText,
-        ]}>
-        {props.isStop ? 'STOP' : 'START'}
+        ]}
+        allowFontScaling
+        maxFontSizeMultiplier={FONT_CAPS.buttonLabel}
+        numberOfLines={1}
+        ellipsizeMode="tail">
+        {label}
       </Text>
     </TouchableOpacity>
   );
@@ -35,56 +67,50 @@ export const StartStopButton = (props: StartStopButtonProps) => {
 
 const styles = StyleSheet.create({
   startButton: {
-    // Responsive width using percentage of screen width
     width: screenWidth * 0.5, // 50% of screen width
-    minWidth: 120, // Minimum width for small screens
-    maxWidth: 250, // Maximum width for large screens
+    minWidth: 120,
+    maxWidth: 250,
 
-    // Responsive height
-    height: screenHeight * 0.06, // 6% of screen height
-    minHeight: 40, // Minimum touch target (iOS guidelines)
-    maxHeight: 45, // Maximum height
+    height: getScaledSize(screenHeight * 0.06),
+    minHeight: 44, // Apple Human Interface Guidelines
+    maxHeight: 52,
 
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#6200EE',
-    borderRadius: 8,
-    marginTop: screenHeight * 0.025, // 2.5% of screen height
+    borderRadius: getScaledSize(10),
+    marginTop: getScaledSize(screenHeight * 0.025),
 
     // Platform-specific shadows
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: {
-          width: 0,
-          height: 2,
-        },
+        shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.25,
         shadowRadius: 3.84,
       },
       android: {
-        elevation: 5,
+        elevation: 4,
       },
     }),
   },
 
   startButtonTitle: {
     color: 'white',
-    fontSize: screenWidth * 0.04, // 4% of screen width
-    // fontSize: 14,
-    // maxFontSize: 20,
+    fontSize: getScaledSize(16),
     fontWeight: '600',
     textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
 
-    // Platform-specific font adjustments
+    // Font consistency across platforms
     ...Platform.select({
-      ios: {
-        fontFamily: 'System',
-      },
-      android: {
-        fontFamily: 'Roboto',
-      },
+      ios: {fontFamily: 'System'},
+      android: {fontFamily: 'Roboto', includeFontPadding: false},
     }),
+
+    textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
+    lineHeight: getScaledSize(18),
   },
 
   disabledButton: {
@@ -97,7 +123,7 @@ const styles = StyleSheet.create({
   },
 });
 
-// Alternative approach using responsive hook (optional enhancement)
+// Optional responsive hook (for dynamic layout recalculation)
 export const useResponsiveDimensions = () => {
   const [dimensions, setDimensions] = React.useState(Dimensions.get('window'));
 
@@ -105,7 +131,6 @@ export const useResponsiveDimensions = () => {
     const subscription = Dimensions.addEventListener('change', ({window}) => {
       setDimensions(window);
     });
-
     return () => subscription?.remove();
   }, []);
 

@@ -1,9 +1,9 @@
-// ProfileScreen.tsx — scrolls even inside tabs/pagers (Android-safe)
+// /////////////////////////////////////////////Font Increase Limit Fix
 
+// ProfileScreen.tsx
 import * as React from 'react';
 import {useCallback, useContext, useEffect, useReducer} from 'react';
 import {
-  Text,
   StyleSheet,
   Image,
   View,
@@ -19,6 +19,7 @@ import {signOut} from 'aws-amplify/auth';
 import AuthContext from '../auth/context';
 import {UserApiService} from '../api/userApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import AppText from '../components/AppText';
 
 const initialState = {
   userEmail: '',
@@ -82,7 +83,6 @@ export default function ProfileScreen() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const insets = useSafeAreaInsets();
 
-  // Android hardware back to Scan tab
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
@@ -115,8 +115,9 @@ export default function ProfileScreen() {
         },
       });
       const savedImageUri = await AsyncStorage.getItem('user_profile_image');
-      if (savedImageUri)
+      if (savedImageUri) {
         dispatch({type: 'SET_PROFILE_IMAGE', payload: savedImageUri});
+      }
     } catch (e: any) {
       console.error(e);
       dispatch({type: 'SET_ERROR', payload: e?.message ?? 'Failed to load'});
@@ -127,6 +128,7 @@ export default function ProfileScreen() {
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);
+
   useFocusEffect(
     useCallback(() => {
       fetchUser();
@@ -194,7 +196,7 @@ export default function ProfileScreen() {
     return (
       <SafeAreaView style={styles.loadingRoot} edges={['top', 'bottom']}>
         <ActivityIndicator size="large" color="#016097" />
-        <Text style={styles.loadingText}>Loading profile...</Text>
+        <AppText style={styles.loadingText}>Loading profile...</AppText>
       </SafeAreaView>
     );
   }
@@ -210,21 +212,17 @@ export default function ProfileScreen() {
           styles.scrollContent,
           {paddingBottom: Math.max(insets.bottom, 16) + 24},
         ]}
-        // 👇 these three are the usual Android lifesavers inside tabs/pagers
         nestedScrollEnabled
         overScrollMode="always"
         keyboardShouldPersistTaps="handled"
-        // make sure nothing outer steals the pan:
         // @ts-ignore
         onStartShouldSetResponderCapture={() => false}
         // @ts-ignore
         onMoveShouldSetResponderCapture={() => false}>
-        {/* Header pill */}
         <View style={styles.headerCard}>
-          <Text style={styles.headerTitle}>Profile</Text>
+          <AppText style={styles.headerTitle}>Profile</AppText>
         </View>
 
-        {/* Profile card */}
         <View style={styles.card}>
           <View style={styles.profileRow}>
             <Image
@@ -238,18 +236,18 @@ export default function ProfileScreen() {
               }
             />
             <View style={styles.profileText}>
-              <Text style={styles.displayName} numberOfLines={2}>
+              <AppText style={styles.displayName} numberOfLines={2}>
                 {state.userDisplayName || 'User Name'}
-              </Text>
-              <Text style={styles.email} numberOfLines={2}>
+              </AppText>
+              <AppText style={styles.email} numberOfLines={2}>
                 {state.userEmail || 'user@email.com'}
-              </Text>
+              </AppText>
             </View>
             <TouchableOpacity
               onPress={handleEditProfile}
               hitSlop={10}
               activeOpacity={0.6}>
-              <Text style={styles.editGlyph}>✏️</Text>
+              <AppText style={styles.editGlyph}>✏️</AppText>
             </TouchableOpacity>
           </View>
 
@@ -273,7 +271,6 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Menu card */}
         <View style={styles.card}>
           <NavRow title="How to Scan" onPress={handleHowToScan} />
           <Separator />
@@ -285,6 +282,12 @@ export default function ProfileScreen() {
           <Separator />
           <NavRow title="Error Logs" onPress={handleErrors} />
           <Separator />
+          {/* ← Added this row for Pulse Rate Trend */}
+          {/* <NavRow
+            title="View Pulse Rate Trend"
+            onPress={() => navigation.navigate('PulseRateTrend')}
+          />
+          <Separator /> */}
           <NavRow title="Log Out" onPress={handleLogOut} destructive />
           <Separator />
           <NavRow
@@ -298,11 +301,10 @@ export default function ProfileScreen() {
   );
 }
 
-/* ---- Small parts ---- */
 const MeasureRow = ({label, value}: {label: string; value: string}) => (
   <View style={styles.measureRow}>
-    <Text style={styles.measureLabel}>{label}</Text>
-    <Text style={styles.measureValue}>{value}</Text>
+    <AppText style={styles.measureLabel}>{label}</AppText>
+    <AppText style={styles.measureValue}>{value}</AppText>
   </View>
 );
 
@@ -316,18 +318,17 @@ const NavRow = ({
   destructive?: boolean;
 }) => (
   <TouchableOpacity style={styles.navRow} onPress={onPress} activeOpacity={0.6}>
-    <Text style={[styles.navText, destructive && styles.navTextDanger]}>
+    <AppText style={[styles.navText, destructive && styles.navTextDanger]}>
       {title}
-    </Text>
+    </AppText>
     <View style={styles.chevBox}>
-      <Text style={styles.chev}>›</Text>
+      <AppText style={styles.chev}>›</AppText>
     </View>
   </TouchableOpacity>
 );
 
 const Separator = () => <View style={styles.separator} />;
 
-/* ---- Styles ---- */
 const styles = StyleSheet.create({
   root: {flex: 1, backgroundColor: '#B7DDF8'},
   loadingRoot: {

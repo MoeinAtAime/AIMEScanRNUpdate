@@ -1,5 +1,4 @@
-///////////////new
-
+/////////////////////////////////Font Increase Limit Fix
 import React, {useState, useEffect, useCallback, useMemo} from 'react';
 import {
   View,
@@ -19,15 +18,22 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 
 import {ErrorBoundary} from '../components/ErrorBoundary';
-import ResultsModal from '../components/ResultsModal';
 import CustomCalendar from '../components/CustomCalendar';
-
 import fetchAllResultsLastYear from '../api/fetchAllResultsLastYear';
 import colors from '../config/colors';
 
 const {width, height} = Dimensions.get('window');
 const isSmallScreen = width < 350;
 const isShortScreen = height < 700;
+
+// Dynamic Type caps (kept modest to prevent layout blow-ups)
+const FONT_CAPS = {
+  title: 1.2,
+  heading: 1.2,
+  body: 1.2,
+  button: 1.15,
+  small: 1.1,
+};
 
 const STORAGE_KEYS = {
   SCAN_RESULTS: 'scanResults',
@@ -106,26 +112,59 @@ const ScanCard = React.memo(({scan, onPress}) => {
   const color = getInterpretationColor(wellnessLevel);
 
   return (
-    <TouchableOpacity style={styles.scanCard} onPress={onPress}>
+    <TouchableOpacity
+      style={styles.scanCard}
+      onPress={onPress}
+      activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={`Open scan result. Wellness score ${wellnessIndex} out of 10, status ${interpretation}, taken at ${formatTime(
+        scan.timeStamp,
+      )}`}>
       <View style={styles.scanCardContent}>
         <View style={styles.scoreContainer}>
-          <Text style={styles.wellnessScore}>{wellnessIndex}/10</Text>
+          <Text
+            style={styles.wellnessScore}
+            allowFontScaling
+            maxFontSizeMultiplier={FONT_CAPS.heading}
+            numberOfLines={1}
+            ellipsizeMode="tail">
+            {wellnessIndex}/10
+          </Text>
         </View>
 
         <View style={styles.separator} />
 
         <View style={styles.statusContainer}>
-          <Text style={[styles.wellnessStatus, {color}]}>{interpretation}</Text>
+          <Text
+            style={[styles.wellnessStatus, {color}]}
+            numberOfLines={1}
+            allowFontScaling
+            maxFontSizeMultiplier={FONT_CAPS.body}
+            adjustsFontSizeToFit>
+            {interpretation}
+          </Text>
         </View>
 
         <View style={styles.separator} />
 
         <View style={styles.timeContainer}>
-          <Text style={styles.timeText}>{formatTime(scan.timeStamp)}</Text>
+          <Text
+            style={styles.timeText}
+            allowFontScaling
+            maxFontSizeMultiplier={FONT_CAPS.small}
+            numberOfLines={1}
+            ellipsizeMode="tail">
+            {formatTime(scan.timeStamp)}
+          </Text>
         </View>
 
         <View style={styles.arrowContainer}>
-          <Text style={styles.arrowIcon}>›</Text>
+          <Text
+            style={styles.arrowIcon}
+            allowFontScaling
+            maxFontSizeMultiplier={FONT_CAPS.small}>
+            ›
+          </Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -134,16 +173,39 @@ const ScanCard = React.memo(({scan, onPress}) => {
 
 const EmptyState = ({hasAnyData, loading, onFetch}) => {
   return (
-    <View style={styles.emptyStateContainer}>
+    <View
+      style={styles.emptyStateContainer}
+      accessible
+      accessibilityRole="summary"
+      accessibilityLabel={
+        hasAnyData
+          ? 'No scans on this date'
+          : 'Welcome to your history. Load older data to view past results.'
+      }>
       <View style={styles.emptyStateIconContainer}>
-        <Text style={styles.emptyStateIcon}>{hasAnyData ? '📅' : '☁️'}</Text>
+        <Text
+          style={styles.emptyStateIcon}
+          allowFontScaling
+          maxFontSizeMultiplier={FONT_CAPS.heading}>
+          {hasAnyData ? '📅' : '☁️'}
+        </Text>
       </View>
 
-      <Text style={styles.emptyStateTitle}>
+      <Text
+        style={styles.emptyStateTitle}
+        numberOfLines={2}
+        allowFontScaling
+        maxFontSizeMultiplier={FONT_CAPS.title}
+        adjustsFontSizeToFit>
         {hasAnyData ? 'No scans on this date' : 'Welcome to Your History'}
       </Text>
 
-      <Text style={styles.emptyStateDescription}>
+      <Text
+        style={styles.emptyStateDescription}
+        numberOfLines={4}
+        allowFontScaling
+        maxFontSizeMultiplier={FONT_CAPS.body}
+        adjustsFontSizeToFit>
         {hasAnyData
           ? 'Try selecting a different date or sync your data'
           : 'Load your scan history to view all your past results'}
@@ -153,21 +215,38 @@ const EmptyState = ({hasAnyData, loading, onFetch}) => {
         style={styles.primaryFetchButton}
         onPress={onFetch}
         disabled={loading}
-        activeOpacity={0.8}>
+        activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityState={{disabled: loading}}
+        accessibilityLabel="Load older data"
+        accessibilityHint="Downloads up to 365 days of scan history">
         {loading ? (
           <ActivityIndicator color="#fff" size="small" />
         ) : (
           <>
-            <Text style={styles.primaryFetchButtonIcon}>☁️</Text>
-            <Text style={styles.primaryFetchButtonText}>
-              Load Last Year's Data
+            <Text
+              style={styles.primaryFetchButtonIcon}
+              allowFontScaling
+              maxFontSizeMultiplier={FONT_CAPS.button}>
+              ☁️
+            </Text>
+            <Text
+              style={styles.primaryFetchButtonText}
+              allowFontScaling
+              maxFontSizeMultiplier={FONT_CAPS.button}>
+              Load Older Data
             </Text>
           </>
         )}
       </TouchableOpacity>
 
       {!hasAnyData && (
-        <Text style={styles.emptyStateHint}>
+        <Text
+          style={styles.emptyStateHint}
+          allowFontScaling
+          maxFontSizeMultiplier={FONT_CAPS.small}
+          numberOfLines={2}
+          adjustsFontSizeToFit>
           This will download up to 365 days of scan history
         </Text>
       )}
@@ -185,8 +264,6 @@ const HistoryContent = () => {
     loading: false,
     selectedDate: new Date(),
     showCalendar: false,
-    modalVisible: false,
-    selectedScanData: null,
     refreshing: false,
     scannedDates: {},
   });
@@ -195,7 +272,6 @@ const HistoryContent = () => {
     setState(prev => ({...prev, ...updates}));
   };
 
-  // Back button behavior (for Android)
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
@@ -210,21 +286,16 @@ const HistoryContent = () => {
     }, [navigation]),
   );
 
-  // Load saved data from AsyncStorage on mount
   const loadSavedData = useCallback(async () => {
     try {
       const stored = await AsyncStorage.getItem(STORAGE_KEYS.SCAN_RESULTS);
       if (stored) {
         const parsed = JSON.parse(stored);
-
-        // Update scannedDates map
         const map = {};
         parsed.forEach(scan => {
           const d = new Date(scan.timeStamp).toLocaleDateString('en-US');
           map[d] = true;
         });
-
-        // Also load stored scanned dates
         const storedDates = await AsyncStorage.getItem(
           STORAGE_KEYS.SCANNED_DATES,
         );
@@ -232,14 +303,9 @@ const HistoryContent = () => {
           const storedMap = JSON.parse(storedDates);
           Object.assign(map, storedMap);
         }
-
         updateState({scannedDates: map});
-
         const filtered = filterDataByDate(state.selectedDate, parsed);
-        updateState({
-          savedData: parsed,
-          filteredData: filtered,
-        });
+        updateState({savedData: parsed, filteredData: filtered});
       }
     } catch (err) {
       console.error('Error loading saved data:', err);
@@ -250,7 +316,6 @@ const HistoryContent = () => {
     loadSavedData();
   }, [loadSavedData]);
 
-  // Utility: given date and all data, filter
   const filterDataByDate = useCallback((date, allData) => {
     const target = date.toLocaleDateString('en-US');
     return allData.filter(scan => {
@@ -274,7 +339,6 @@ const HistoryContent = () => {
 
     try {
       const results = await fetchAllResultsLastYear();
-
       if (results.length === 0) {
         Alert.alert(
           'No Data Found',
@@ -283,14 +347,10 @@ const HistoryContent = () => {
         updateState({loading: false});
         return;
       }
-
-      // Replace stored data entirely
       await AsyncStorage.setItem(
         STORAGE_KEYS.SCAN_RESULTS,
         JSON.stringify(results),
       );
-
-      // Recompute scannedDates map
       const map = {};
       results.forEach(scan => {
         const d = new Date(scan.timeStamp).toLocaleDateString('en-US');
@@ -301,13 +361,8 @@ const HistoryContent = () => {
         JSON.stringify(map),
       );
       updateState({scannedDates: map});
-
       const filtered = filterDataByDate(state.selectedDate, results);
-      updateState({
-        savedData: results,
-        filteredData: filtered,
-      });
-
+      updateState({savedData: results, filteredData: filtered});
       Alert.alert(
         'Success',
         `Successfully loaded ${results.length} scan${
@@ -328,11 +383,9 @@ const HistoryContent = () => {
     updateState({refreshing: false});
   }, [loadSavedData]);
 
-  const openModal = (scan, idx) => {
-    const scanWithNum = {...scan, scanNumber: idx + 1};
-    updateState({
-      modalVisible: true,
-      selectedScanData: [scanWithNum],
+  const openResultsScreen = (scan, idx) => {
+    navigation.navigate('ScanResults', {
+      scanData: [{...scan, scanNumber: idx + 1}],
     });
   };
 
@@ -348,23 +401,41 @@ const HistoryContent = () => {
     <View style={[styles.outerContainer, {paddingTop: insets.top}]}>
       <View style={styles.container}>
         <View style={styles.innerContainer}>
-          {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Select a Date:</Text>
+            <Text
+              style={styles.title}
+              numberOfLines={1}
+              allowFontScaling
+              maxFontSizeMultiplier={FONT_CAPS.title}
+              adjustsFontSizeToFit>
+              Select a Date:
+            </Text>
 
-            {/* Date picker button */}
             <TouchableOpacity
               style={styles.datePickerButton}
               onPress={() => updateState({showCalendar: true})}
-              activeOpacity={0.7}>
-              <Text style={styles.dateText}>{formattedDate}</Text>
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Open calendar to pick a date">
+              <Text
+                style={styles.dateText}
+                numberOfLines={1}
+                allowFontScaling
+                maxFontSizeMultiplier={FONT_CAPS.body}
+                adjustsFontSizeToFit>
+                {formattedDate}
+              </Text>
               <View style={styles.calendarIcon}>
-                <Text style={styles.calendarIconText}>📅</Text>
+                <Text
+                  style={styles.calendarIconText}
+                  allowFontScaling
+                  maxFontSizeMultiplier={FONT_CAPS.small}>
+                  📅
+                </Text>
               </View>
             </TouchableOpacity>
           </View>
 
-          {/* Calendar overlay */}
           <CustomCalendar
             visible={state.showCalendar}
             onClose={() => updateState({showCalendar: false})}
@@ -373,7 +444,6 @@ const HistoryContent = () => {
             scannedDates={state.scannedDates}
           />
 
-          {/* Main content */}
           <ScrollView
             style={styles.scrollContainer}
             contentContainerStyle={styles.scrollContentContainer}
@@ -390,7 +460,7 @@ const HistoryContent = () => {
                 <ScanCard
                   key={`${scan.timeStamp}-${idx}`}
                   scan={scan}
-                  onPress={() => openModal(scan, idx)}
+                  onPress={() => openResultsScreen(scan, idx)}
                 />
               ))
             ) : (
@@ -402,27 +472,35 @@ const HistoryContent = () => {
             )}
           </ScrollView>
 
-          {/* Results Modal */}
-          <ResultsModal
-            isVisible={state.modalVisible}
-            onClose={() => updateState({modalVisible: false})}
-            scanData={state.selectedScanData}
-          />
+          {state.loading && (
+            <View
+              style={styles.loadingOverlay}
+              accessible
+              accessibilityRole="alert"
+              accessibilityLabel="Loading your older results. This may take a moment.">
+              <View style={styles.loadingBox}>
+                <ActivityIndicator size="large" color="#fff" />
+                <Text
+                  style={styles.loadingText}
+                  numberOfLines={1}
+                  allowFontScaling
+                  maxFontSizeMultiplier={FONT_CAPS.body}
+                  adjustsFontSizeToFit>
+                  Loading your older results...
+                </Text>
+                <Text
+                  style={styles.loadingSubText}
+                  numberOfLines={1}
+                  allowFontScaling
+                  maxFontSizeMultiplier={FONT_CAPS.small}
+                  adjustsFontSizeToFit>
+                  This may take a moment
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
       </View>
-
-      {/* Full-screen loading overlay */}
-      {state.loading && (
-        <View style={styles.loadingOverlay}>
-          <View style={styles.loadingBox}>
-            <ActivityIndicator size="large" color="#fff" />
-            <Text style={styles.loadingText}>
-              Loading your older results...
-            </Text>
-            <Text style={styles.loadingSubText}>This may take a moment</Text>
-          </View>
-        </View>
-      )}
     </View>
   );
 };
@@ -460,10 +538,17 @@ const styles = StyleSheet.create({
       ios: isSmallScreen ? 24 : 28,
       android: isSmallScreen ? 22 : 26,
     }),
+    lineHeight: Platform.select({
+      ios: isSmallScreen ? 30 : 36,
+      android: isSmallScreen ? 28 : 32,
+    }),
     fontWeight: 'bold',
     color: '#1a1a1a',
     textAlign: 'center',
     marginBottom: 8,
+    flexShrink: 1,
+    includeFontPadding: false,
+    textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
   },
   datePickerButton: {
     marginTop: 8,
@@ -471,38 +556,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#f8f9fa',
-    padding: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e0e0e0',
     overflow: 'hidden',
     alignSelf: 'center',
     width: '85%',
-    minHeight: 50,
   },
   dateText: {
     fontSize: 16,
+    lineHeight: 20,
     fontWeight: '500',
     color: '#333',
+    flex: 1,
+    includeFontPadding: false,
+    textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
   },
   calendarIcon: {
     width: 28,
     height: 28,
     justifyContent: 'center',
     alignItems: 'center',
+    marginLeft: 8,
   },
   calendarIconText: {
     fontSize: 18,
+    lineHeight: 22,
   },
   scrollContainer: {
     flex: 1,
   },
   scrollContentContainer: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     paddingBottom: 20,
   },
-
-  // Scan Card Styles
   scanCard: {
     backgroundColor: 'white',
     borderRadius: 15,
@@ -512,28 +602,32 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 3,
     elevation: 2,
-    minHeight: 60,
   },
   scanCardContent: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    minHeight: 44,
+    flexWrap: 'wrap',
   },
   scoreContainer: {
     flex: 2,
     alignItems: 'center',
+    padding: 4,
   },
   wellnessScore: {
     fontSize: 17,
+    lineHeight: 22,
     fontWeight: '700',
     color: '#333',
+    includeFontPadding: false,
+    textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
   },
   separator: {
     width: 1,
-    height: 24,
     backgroundColor: '#e0e0e0',
     marginHorizontal: 8,
+    alignSelf: 'stretch',
+    height: '60%',
   },
   statusContainer: {
     flex: 3,
@@ -542,34 +636,40 @@ const styles = StyleSheet.create({
   },
   wellnessStatus: {
     fontSize: 14,
+    lineHeight: 18,
     fontWeight: '600',
     textAlign: 'center',
+    includeFontPadding: false,
+    textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
   },
   timeContainer: {
     flex: 1.5,
     alignItems: 'center',
-    minWidth: 50,
+    padding: 4,
   },
   timeText: {
     fontSize: 13,
+    lineHeight: 16,
     fontWeight: '500',
     color: '#666',
+    includeFontPadding: false,
+    textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
   },
   arrowContainer: {
     width: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 44,
+    padding: 4,
   },
   arrowIcon: {
     fontSize: 22,
+    lineHeight: 26,
     fontWeight: 'bold',
     color: colors.primaryColor,
   },
-
-  // Empty State Styles
   emptyStateContainer: {
-    padding: 30,
+    paddingHorizontal: 24,
+    paddingVertical: 30,
     alignItems: 'center',
     backgroundColor: 'white',
     borderRadius: 20,
@@ -591,21 +691,27 @@ const styles = StyleSheet.create({
   },
   emptyStateIcon: {
     fontSize: 40,
+    lineHeight: 44,
   },
   emptyStateTitle: {
     fontSize: 22,
+    lineHeight: 28,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 12,
     textAlign: 'center',
+    includeFontPadding: false,
+    textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
   },
   emptyStateDescription: {
     fontSize: 15,
+    lineHeight: 20,
     color: '#666',
     textAlign: 'center',
-    lineHeight: 22,
     marginBottom: 24,
     paddingHorizontal: 10,
+    includeFontPadding: false,
+    textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
   },
   primaryFetchButton: {
     flexDirection: 'row',
@@ -620,27 +726,31 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     minWidth: 200,
-    minHeight: 50,
     justifyContent: 'center',
   },
   primaryFetchButtonIcon: {
     fontSize: 20,
+    lineHeight: 24,
     marginRight: 8,
   },
   primaryFetchButtonText: {
     color: '#fff',
     fontSize: 16,
+    lineHeight: 20,
     fontWeight: '600',
+    includeFontPadding: false,
+    textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
   },
   emptyStateHint: {
     fontSize: 12,
+    lineHeight: 16,
     color: '#999',
     marginTop: 12,
     textAlign: 'center',
     fontStyle: 'italic',
+    includeFontPadding: false,
+    textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
   },
-
-  // Loading Overlay Styles
   loadingOverlay: {
     position: 'absolute',
     top: 0,
@@ -661,16 +771,22 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: '#fff',
-    marginTop: 16,
     fontSize: 16,
+    lineHeight: 20,
     textAlign: 'center',
     fontWeight: '600',
+    marginTop: 16,
+    includeFontPadding: false,
+    textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
   },
   loadingSubText: {
     color: '#ccc',
-    marginTop: 8,
     fontSize: 14,
+    lineHeight: 18,
     textAlign: 'center',
+    marginTop: 8,
+    includeFontPadding: false,
+    textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
   },
 });
 

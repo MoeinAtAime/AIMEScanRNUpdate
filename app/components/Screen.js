@@ -1,13 +1,35 @@
-// Screen - A responsive wrapper component that provides a safe area and padding for content
+/////////////////////////////////////Font Increase Limit Fix
+
+// Screen.js - A responsive wrapper component that provides a safe area and padding for content
 import React, {useState, useEffect} from 'react';
 import {
-  SafeAreaView,
   StyleSheet,
   View,
   StatusBar,
   Platform,
   Dimensions,
+  Text,
+  TextInput,
+  TouchableOpacity,
 } from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
+
+// 🔒 GLOBAL FONT/DISPLAY SIZE CLAMP (same as in MeasureScreen)
+// this makes sure system text scaling won't jump to 2.0/3.0 everywhere
+if (Text.defaultProps == null) {
+  Text.defaultProps = {};
+}
+Text.defaultProps.maxFontSizeMultiplier = 1.3;
+
+if (TextInput.defaultProps == null) {
+  TextInput.defaultProps = {};
+}
+TextInput.defaultProps.maxFontSizeMultiplier = 1.3;
+
+if (TouchableOpacity.defaultProps == null) {
+  TouchableOpacity.defaultProps = {};
+}
+TouchableOpacity.defaultProps.maxFontSizeMultiplier = 1.3;
 
 /**
  * Screen - A responsive component that wraps content in a safe area with customizable styling
@@ -116,10 +138,8 @@ const Screen = ({
   // Calculate status bar height for different platforms and scenarios
   const getStatusBarHeight = () => {
     if (Platform.OS === 'ios') {
-      // iOS automatically handles this with SafeAreaView
       return 0;
     } else {
-      // Android - use StatusBar.currentHeight or fallback
       return statusBarTranslucent ? StatusBar.currentHeight || 24 : 0;
     }
   };
@@ -133,21 +153,20 @@ const Screen = ({
       paddingRight: 0,
     };
 
-    // Add extra padding for landscape mode on phones
+    // Extra padding for landscape phones
     if (isLandscape && !isTablet) {
       additionalPadding.paddingLeft = currentPadding.horizontal * 0.5;
       additionalPadding.paddingRight = currentPadding.horizontal * 0.5;
     }
 
-    // Add extra padding for tablets
+    // Extra padding for tablets
     if (isTablet) {
       additionalPadding.paddingLeft = currentPadding.horizontal * 0.5;
       additionalPadding.paddingRight = currentPadding.horizontal * 0.5;
     }
 
-    // Handle notched devices (approximate detection)
+    // Approx notch handling (iPhone X+)
     if (Platform.OS === 'ios' && dimensions.height >= 812) {
-      // iPhone X and newer - SafeAreaView handles this, but we might need extra spacing
       additionalPadding.paddingBottom = isLandscape
         ? 0
         : currentPadding.bottom * 0.3;
@@ -174,26 +193,23 @@ const Screen = ({
       paddingHorizontal: currentPadding.horizontal,
       paddingLeft: currentPadding.horizontal + additionalPadding.paddingLeft,
       paddingRight: currentPadding.horizontal + additionalPadding.paddingRight,
-      // Ensure proper layout on different screen sizes
       minHeight: '100%',
-      // Handle keyboard aware layouts
       ...(keyboardAware &&
         Platform.OS === 'android' && {
           behavior: 'padding',
         }),
     },
-    // Alternative container for when SafeAreaView is disabled
     containerNoSafeArea: {
       flex: 1,
       paddingTop: Platform.select({
-        ios: currentPadding.top + (dimensions.height >= 812 ? 44 : 20), // Status bar height approximation
+        ios: currentPadding.top + (dimensions.height >= 812 ? 44 : 20),
         android: getStatusBarHeight() + currentPadding.top,
       }),
       paddingBottom:
         Platform.select({
           ios:
             currentPadding.bottom +
-            (isLandscape ? 0 : dimensions.height >= 812 ? 34 : 0), // Home indicator height
+            (isLandscape ? 0 : dimensions.height >= 812 ? 34 : 0),
           android: currentPadding.bottom,
         }) + additionalPadding.paddingBottom,
       paddingHorizontal: currentPadding.horizontal,
@@ -207,7 +223,7 @@ const Screen = ({
     },
   });
 
-  // Configure StatusBar props
+  // StatusBar props
   const statusBarProps = {
     barStyle: currentTheme.statusBarStyle,
     hidden: statusBarHidden,

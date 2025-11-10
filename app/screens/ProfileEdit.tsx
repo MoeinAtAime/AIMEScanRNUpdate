@@ -1,9 +1,14 @@
+// ////////////////////////Font Increase Limit Fix
+
+// // ProfileEdit.tsx — keyboard-safe + boot loader + completeness redirect
+
+/////////////phone Number Added
+
 // ProfileEdit.tsx — keyboard-safe + boot loader + completeness redirect
 
 import * as React from 'react';
 import {useState, useEffect, useCallback, useContext} from 'react';
 import {
-  Text,
   StyleSheet,
   View,
   Pressable,
@@ -17,6 +22,7 @@ import {
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import PropTypes from 'prop-types';
+
 import colors from '../config/colors';
 import {
   validateHeight,
@@ -28,10 +34,11 @@ import AuthContext from '../auth/context';
 import ProfileImagePicker from '../components/ProfileImagePicker';
 import {fetchUserAttributes} from 'aws-amplify/auth';
 
+import AppText from '../components/AppText';
+
 const ProfileEdit = ({navigation, route}) => {
-  // Route params (fallbacks only; server is source of truth)
   const {
-    currentHeight = '', // "F.IN", e.g., "5.11"
+    currentHeight = '',
     currentWeight = '',
     currentSmokingStatus = '',
     currentDisplayName = '',
@@ -41,7 +48,6 @@ const ProfileEdit = ({navigation, route}) => {
   const insets = useSafeAreaInsets();
   const {user} = useContext(AuthContext);
 
-  /* ---------------- Helpers ---------------- */
   const parseHeight = heightStr => {
     if (!heightStr) return {feet: '', inches: ''};
     const parts = String(heightStr).split('.');
@@ -52,7 +58,6 @@ const ProfileEdit = ({navigation, route}) => {
     return `${f || '0'}.${padded}`;
   };
 
-  /* ---------------- Local state ---------------- */
   const initialHeight = parseHeight(currentHeight);
   const [feet, setFeet] = useState(initialHeight.feet);
   const [inches, setInches] = useState(initialHeight.inches);
@@ -67,26 +72,38 @@ const ProfileEdit = ({navigation, route}) => {
     user?.birthdate || route?.params?.birthdate || '',
   );
 
-  // Errors & UI state
+  // ✅ New: optional phone number
+  const [phoneNumber, setPhoneNumber] = useState<string>('');
+
   const [heightError, setHeightError] = useState('');
   const [weightError, setWeightError] = useState('');
   const [displayNameError, setDisplayNameError] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
-
-  // Boot screen while hydrating & deciding
   const [booting, setBooting] = useState(true);
 
-  /* ---------------- Image handlers ---------------- */
+  const feetRef = React.useRef<TextInput>(null);
+  const inchesRef = React.useRef<TextInput>(null);
+  const weightRef = React.useRef<TextInput>(null);
+  const displayNameRef = React.useRef<TextInput>(null);
+  const phoneRef = React.useRef<TextInput>(null);
+
+  const blurAllInputs = () => {
+    feetRef.current?.blur();
+    inchesRef.current?.blur();
+    weightRef.current?.blur();
+    displayNameRef.current?.blur();
+    phoneRef.current?.blur();
+    Keyboard.dismiss();
+  };
+
   const handleImageSelected = useCallback(imageUri => {
     setSelectedImage(imageUri);
   }, []);
   const handleDeleteImage = () => setSelectedImage(null);
 
-  /* ---------------- Hydrate & decide redirect (single effect) ---------------- */
   useEffect(() => {
     let cancelled = false;
-
     (async () => {
       try {
         const attrs = await fetchUserAttributes();
@@ -101,6 +118,7 @@ const ProfileEdit = ({navigation, route}) => {
         const g = attrs?.['gender'] || gender;
         const bd = attrs?.['birthdate'] || birthdate;
         const em = attrs?.['email'] || email;
+        const ph = attrs?.['phone_number'] || ''; // ✅ new
 
         const parsed = parseHeight(h);
         setFeet(parsed.feet);
@@ -111,8 +129,8 @@ const ProfileEdit = ({navigation, route}) => {
         setGender(g);
         setBirthdate(bd);
         setEmail(em);
+        setPhoneNumber(ph); // ✅ new
 
-        // Decide completeness immediately while booting
         const heightStr = composeHeight(parsed.feet, parsed.inches);
         const hasHeight = heightStr !== '0.00' && validateHeight(heightStr);
         const hasWeight = !!w && validateWeight(w);
@@ -134,12 +152,11 @@ const ProfileEdit = ({navigation, route}) => {
               birthdate: bd,
             },
           });
-          return; // this screen will unmount
+          return;
         }
 
         setBooting(false);
       } catch (e) {
-        // If fetch fails, let user edit with whatever we have
         setBooting(false);
       }
     })();
@@ -150,13 +167,14 @@ const ProfileEdit = ({navigation, route}) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* ---------------- Input handlers ---------------- */
   const validateHeightFields = (feetValue, inchesValue) => {
     const f = parseInt(feetValue || '0', 10);
     const i = parseInt(inchesValue || '0', 10);
     const totalInches = f * 12 + i;
     const heightInCm = totalInches * 2.54;
-    if (heightInCm >= 130 && heightInCm <= 230) setHeightError('');
+    if (heightInCm >= 130 && heightInCm <= 230) {
+      setHeightError('');
+    }
   };
 
   const handleFeetChange = value => {
@@ -192,22 +210,28 @@ const ProfileEdit = ({navigation, route}) => {
   const handleWeightChange = value => {
     const formatted = formatWeight(value);
     setWeight(formatted);
-    if (validateWeight(formatted) || formatted === '') setWeightError('');
+    if (validateWeight(formatted) || formatted === '') {
+      setWeightError('');
+    }
   };
 
   const handleDisplayNameChange = value => {
     setDisplayName(value);
-    if (value.trim() === '')
+    if (value.trim() === '') {
       setDisplayNameError('Display name cannot be empty');
-    else setDisplayNameError('');
+    } else {
+      setDisplayNameError('');
+    }
   };
 
   const toggleSmoker = () => setIsSmoker(prev => !prev);
 
-  /* ---------------- Save ---------------- */
   const handleSave = async () => {
-    let isValid = true;
+    // Commit any in-progress edits before reading state
+    blurAllInputs();
+    await new Promise(requestAnimationFrame); // one frame is enough to flush edits
 
+    let isValid = true;
     const heightStr = composeHeight(feet, inches);
     if (!validateHeight(heightStr)) {
       setHeightError(
@@ -227,6 +251,7 @@ const ProfileEdit = ({navigation, route}) => {
 
     setIsUpdating(true);
     try {
+      // Core updates
       await Promise.all([
         UserApiService.updateAttribute('custom:Height', heightStr),
         UserApiService.updateAttribute('custom:Weight', weight),
@@ -236,6 +261,12 @@ const ProfileEdit = ({navigation, route}) => {
         ),
         UserApiService.updateAttribute('custom:userDisplayName', displayName),
       ]);
+
+      // ✅ Optional phone number (no verification flow)
+      if (phoneNumber && phoneNumber.trim()) {
+        await UserApiService.updatePhoneNumber(phoneNumber, '+1');
+      }
+
       Alert.alert('Success', 'Profile updated successfully!');
       navigation?.goBack();
     } catch (error) {
@@ -248,50 +279,66 @@ const ProfileEdit = ({navigation, route}) => {
 
   const handleBack = () => navigation?.goBack();
 
-  /* ---------------- Boot screen ---------------- */
   if (booting) {
     return (
       <SafeAreaView style={styles.booting} edges={['top', 'bottom']}>
         <ActivityIndicator size="large" color="#016097" />
-        <Text style={styles.bootingText}>Loading your profile…</Text>
+        <AppText style={styles.bootingText}>Loading your profile…</AppText>
       </SafeAreaView>
     );
   }
 
-  /* ---------------- UI ---------------- */
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.mainContainer}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Pressable
-              style={styles.backButton}
-              onPress={handleBack}
-              android_ripple={{color: '#f0f0f0'}}>
-              <Text style={styles.backButtonText}>‹</Text>
-            </Pressable>
-            <View style={styles.editProfileWrapper}>
-              <Text style={styles.title}>Edit Profile</Text>
-            </View>
+      <View style={styles.mainContainer}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Pressable
+            style={styles.backButton}
+            onPress={handleBack}
+            android_ripple={{color: '#f0f0f0'}}>
+            <AppText
+              style={styles.backButtonText}
+              allowFontScaling={true}
+              maxFontSizeMultiplier={1.2}>
+              ‹
+            </AppText>
+          </Pressable>
+          <View style={styles.editProfileWrapper}>
+            <AppText
+              style={styles.title}
+              allowFontScaling={true}
+              maxFontSizeMultiplier={1.2}>
+              Edit Profile
+            </AppText>
           </View>
+        </View>
 
-          {/* Content */}
-          <View style={styles.contentContainer}>
-            <KeyboardAwareScrollView
-              style={styles.scrollView}
-              contentContainerStyle={[
-                styles.scrollContent,
-                {paddingBottom: insets.bottom + 24},
-              ]}
-              keyboardShouldPersistTaps="handled"
-              enableOnAndroid
-              extraHeight={80} // keep focused input above keyboard
-              extraScrollHeight={24} // add a little breathing room
-              bounces={false}>
-              <View style={styles.frameGroup}>
-                <View style={styles.frameContainer}>
-                  <View>
+        {/* Content */}
+        <View style={styles.contentContainer}>
+          <KeyboardAwareScrollView
+            style={styles.scrollView}
+            contentContainerStyle={[
+              styles.scrollContent,
+              {paddingBottom: insets.bottom + 64},
+            ]}
+            keyboardShouldPersistTaps="always"
+            keyboardDismissMode="on-drag"
+            enableOnAndroid
+            extraHeight={80}
+            extraScrollHeight={24}
+            bounces={false}
+            onScrollBeginDrag={() => {
+              if (Platform.OS === 'android') Keyboard.dismiss();
+            }}>
+            {/* Tap outside to dismiss */}
+            <TouchableWithoutFeedback
+              onPress={Keyboard.dismiss}
+              accessible={false}>
+              <View>
+                {/* Profile Content */}
+                <View style={styles.frameGroup}>
+                  <View style={styles.frameContainer}>
                     <View style={styles.frameView}>
                       <ProfileImagePicker
                         gender={gender || 'Female'}
@@ -300,212 +347,303 @@ const ProfileEdit = ({navigation, route}) => {
                         selectedImage={selectedImage}
                       />
                     </View>
+                    {email ? (
+                      <AppText
+                        style={[styles.sarahMistergmaillcom, styles.textClr]}
+                        allowFontScaling={true}
+                        maxFontSizeMultiplier={1.2}>
+                        {email}
+                      </AppText>
+                    ) : null}
                   </View>
-                  {email ? (
-                    <Text style={[styles.sarahMistergmaillcom, styles.textClr]}>
-                      {email}
-                    </Text>
-                  ) : null}
-                </View>
 
-                <View style={styles.parentFlexBox}>
-                  {/* Display Name */}
-                  <View style={styles.selectionTextField}>
-                    <View style={styles.labelWrapper}>
-                      <Text style={[styles.label1, styles.labelLayout]}>
-                        Display Name
-                      </Text>
+                  <View style={styles.parentFlexBox}>
+                    {/* Display Name */}
+                    <View style={styles.selectionTextField}>
+                      <View style={styles.labelWrapper}>
+                        <AppText
+                          style={[styles.label1, styles.labelLayout]}
+                          allowFontScaling={true}
+                          maxFontSizeMultiplier={1.2}>
+                          Display Name
+                        </AppText>
+                      </View>
+                      <View style={styles.fieldWrapper}>
+                        <TextInput
+                          ref={displayNameRef}
+                          style={[
+                            styles.fieldInput,
+                            displayNameError ? styles.inputError : null,
+                          ]}
+                          value={displayName}
+                          onChangeText={handleDisplayNameChange}
+                          placeholder="Your display name"
+                          returnKeyType="done"
+                          allowFontScaling={true}
+                          maxFontSizeMultiplier={1.1}
+                        />
+                      </View>
+                      {displayNameError ? (
+                        <AppText
+                          style={styles.errorText}
+                          allowFontScaling={true}
+                          maxFontSizeMultiplier={1.1}>
+                          {displayNameError}
+                        </AppText>
+                      ) : null}
                     </View>
-                    <View style={styles.fieldWrapper}>
-                      <TextInput
+
+                    {/* ✅ Phone Number (optional) */}
+                    <View style={styles.selectionTextField}>
+                      <View style={styles.labelWrapper}>
+                        <AppText
+                          style={[styles.label1, styles.labelLayout]}
+                          allowFontScaling={true}
+                          maxFontSizeMultiplier={1.2}>
+                          Phone Number (optional)
+                        </AppText>
+                      </View>
+                      <View style={styles.fieldWrapper}>
+                        <TextInput
+                          ref={phoneRef}
+                          style={styles.fieldInput}
+                          value={phoneNumber}
+                          onChangeText={setPhoneNumber}
+                          placeholder="+1 555 123 4567"
+                          keyboardType="phone-pad"
+                          textContentType="telephoneNumber"
+                          autoComplete="tel"
+                          allowFontScaling={true}
+                          maxFontSizeMultiplier={1.1}
+                        />
+                      </View>
+                    </View>
+
+                    {/* Height + Weight */}
+                    <View style={[styles.frameParent1, styles.parentFlexBox]}>
+                      <View style={styles.selectionTextFieldGroup}>
+                        <View style={styles.selectionTextField1}>
+                          <View style={styles.labelWrapper}>
+                            <AppText
+                              style={[styles.label1, styles.labelLayout]}
+                              allowFontScaling={true}
+                              maxFontSizeMultiplier={1.2}>
+                              Height
+                            </AppText>
+                          </View>
+                          <View style={styles.fieldParent}>
+                            <TextInput
+                              ref={feetRef}
+                              style={[
+                                styles.field1,
+                                heightError ? styles.inputError : null,
+                              ]}
+                              value={feet}
+                              onChangeText={handleFeetChange}
+                              placeholder="5"
+                              keyboardType="numeric"
+                              maxLength={1}
+                              returnKeyType="next"
+                              allowFontScaling={true}
+                              maxFontSizeMultiplier={1.1}
+                            />
+                            <AppText
+                              style={[styles.text4, styles.textClr]}
+                              allowFontScaling={true}
+                              maxFontSizeMultiplier={1.1}>
+                              ft
+                            </AppText>
+                          </View>
+                        </View>
+
+                        <View style={styles.selectionTextField1}>
+                          <View style={styles.labelWrapper}>
+                            <AppText
+                              style={[styles.label1, styles.labelLayout]}
+                              allowFontScaling={true}
+                              maxFontSizeMultiplier={1.2}>
+                              {' '}
+                            </AppText>
+                          </View>
+                          <View style={styles.fieldParent}>
+                            <TextInput
+                              ref={inchesRef}
+                              style={[
+                                styles.field1,
+                                heightError ? styles.inputError : null,
+                              ]}
+                              value={inches}
+                              onChangeText={handleInchesChange}
+                              onBlur={handleInchesBlur}
+                              placeholder="11"
+                              keyboardType="numeric"
+                              maxLength={2}
+                              returnKeyType="next"
+                              allowFontScaling={true}
+                              maxFontSizeMultiplier={1.1}
+                            />
+                            <AppText
+                              style={[styles.text4, styles.textClr]}
+                              allowFontScaling={true}
+                              maxFontSizeMultiplier={1.1}>
+                              in
+                            </AppText>
+                          </View>
+                        </View>
+                      </View>
+
+                      <View style={styles.selectionTextFieldWrapper}>
+                        <View style={styles.selectionTextField3}>
+                          <View style={styles.labelWrapper}>
+                            <AppText
+                              style={[styles.label1, styles.labelLayout]}
+                              allowFontScaling={true}
+                              maxFontSizeMultiplier={1.2}>
+                              Weight
+                            </AppText>
+                          </View>
+                          <View style={styles.fieldParent}>
+                            <TextInput
+                              ref={weightRef}
+                              style={[
+                                styles.field1,
+                                weightError ? styles.inputError : null,
+                              ]}
+                              value={weight}
+                              onChangeText={handleWeightChange}
+                              placeholder="195"
+                              keyboardType="numeric"
+                              returnKeyType="done"
+                              allowFontScaling={true}
+                              maxFontSizeMultiplier={1.1}
+                            />
+                            <AppText
+                              style={[styles.text4, styles.textClr]}
+                              allowFontScaling={true}
+                              maxFontSizeMultiplier={1.1}>
+                              lbs
+                            </AppText>
+                          </View>
+                        </View>
+                      </View>
+
+                      {(heightError || weightError) && (
+                        <View style={styles.errorContainer}>
+                          {heightError && (
+                            <AppText
+                              style={styles.errorText}
+                              allowFontScaling={true}
+                              maxFontSizeMultiplier={1.1}>
+                              {heightError}
+                            </AppText>
+                          )}
+                          {weightError && (
+                            <AppText
+                              style={styles.errorText}
+                              allowFontScaling={true}
+                              maxFontSizeMultiplier={1.1}>
+                              {weightError}
+                            </AppText>
+                          )}
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Smoking Status */}
+                    <View style={styles.selectionTextField}>
+                      <View style={styles.labelWrapper2}>
+                        <AppText
+                          style={[styles.label5, styles.labelLayout]}
+                          allowFontScaling={true}
+                          maxFontSizeMultiplier={1.2}>
+                          Smoking Status
+                        </AppText>
+                      </View>
+                      <View
                         style={[
-                          styles.fieldInput,
-                          displayNameError ? styles.inputError : null,
-                        ]}
-                        value={displayName}
-                        onChangeText={handleDisplayNameChange}
-                        placeholder="Your display name"
-                        returnKeyType="done"
-                      />
-                    </View>
-                    {displayNameError ? (
-                      <Text style={styles.errorText}>{displayNameError}</Text>
-                    ) : null}
-                  </View>
-
-                  {/* Height + Weight */}
-                  <View style={[styles.frameParent1, styles.parentFlexBox]}>
-                    <View style={styles.selectionTextFieldGroup}>
-                      {/* Feet */}
-                      <View style={styles.selectionTextField1}>
-                        <View style={styles.labelWrapper}>
-                          <Text style={[styles.label1, styles.labelLayout]}>
-                            Height
-                          </Text>
-                        </View>
-                        <View style={styles.fieldParent}>
-                          <TextInput
-                            style={[
-                              styles.field1,
-                              heightError ? styles.inputError : null,
-                            ]}
-                            value={feet}
-                            onChangeText={handleFeetChange}
-                            placeholder="5"
-                            keyboardType="numeric"
-                            maxLength={1}
-                            returnKeyType="next"
-                          />
-                          <Text style={[styles.text4, styles.textClr]}>ft</Text>
-                        </View>
-                      </View>
-
-                      {/* Inches */}
-                      <View style={styles.selectionTextField1}>
-                        <View style={styles.labelWrapper}>
-                          <Text style={[styles.label1, styles.labelLayout]}>
-                            {' '}
-                          </Text>
-                        </View>
-                        <View style={styles.fieldParent}>
-                          <TextInput
-                            style={[
-                              styles.field1,
-                              heightError ? styles.inputError : null,
-                            ]}
-                            value={inches}
-                            onChangeText={handleInchesChange}
-                            onBlur={handleInchesBlur}
-                            placeholder="11"
-                            keyboardType="numeric"
-                            maxLength={2}
-                            returnKeyType="next"
-                          />
-                          <Text style={[styles.text4, styles.textClr]}>in</Text>
-                        </View>
+                          styles.selectionRadioWlabelParent,
+                          styles.itemParentFlexBox,
+                        ]}>
+                        <Pressable
+                          style={styles.selectionRadioWlabel}
+                          onPress={() => setIsSmoker(true)}
+                          android_ripple={{color: '#f0f0f0'}}>
+                          <View style={styles.iconWrapper}>
+                            <View
+                              style={[
+                                styles.selectionRadio,
+                                styles.selectionLayout,
+                                isSmoker && styles.selectedRadio,
+                              ]}>
+                              {isSmoker && (
+                                <View style={styles.selectionRadioChild} />
+                              )}
+                            </View>
+                          </View>
+                          <View style={styles.iconWrapper}>
+                            <AppText
+                              style={[styles.text2, styles.labelLayout]}
+                              allowFontScaling={true}
+                              maxFontSizeMultiplier={1.1}>
+                              Yes, I smoke
+                            </AppText>
+                          </View>
+                        </Pressable>
+                        <Pressable
+                          style={styles.selectionRadioWlabel}
+                          onPress={() => setIsSmoker(false)}
+                          android_ripple={{color: '#f0f0f0'}}>
+                          <View style={styles.iconWrapper}>
+                            <View
+                              style={[
+                                styles.selectionRadio1,
+                                styles.selectionLayout,
+                                !isSmoker && styles.selectedRadio,
+                              ]}>
+                              {!isSmoker && (
+                                <View style={styles.selectionRadioChild} />
+                              )}
+                            </View>
+                          </View>
+                          <View style={styles.iconWrapper}>
+                            <AppText
+                              style={[styles.text2, styles.labelLayout]}
+                              allowFontScaling={true}
+                              maxFontSizeMultiplier={1.1}>
+                              No, I do not smoke
+                            </AppText>
+                          </View>
+                        </Pressable>
                       </View>
                     </View>
 
-                    {/* Weight */}
-                    <View style={styles.selectionTextFieldWrapper}>
-                      <View style={styles.selectionTextField3}>
-                        <View style={styles.labelWrapper}>
-                          <Text style={[styles.label1, styles.labelLayout]}>
-                            Weight
-                          </Text>
-                        </View>
-                        <View style={styles.fieldParent}>
-                          <TextInput
-                            style={[
-                              styles.field1,
-                              weightError ? styles.inputError : null,
-                            ]}
-                            value={weight}
-                            onChangeText={handleWeightChange}
-                            placeholder="195"
-                            keyboardType="numeric"
-                            returnKeyType="done"
-                          />
-                          <Text style={[styles.text4, styles.textClr]}>
-                            lbs
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-
-                    {/* Inline errors */}
-                    {heightError || weightError ? (
-                      <View style={styles.errorContainer}>
-                        {heightError ? (
-                          <Text style={styles.errorText}>{heightError}</Text>
-                        ) : null}
-                        {weightError ? (
-                          <Text style={styles.errorText}>{weightError}</Text>
-                        ) : null}
-                      </View>
-                    ) : null}
-                  </View>
-
-                  {/* Smoking Status */}
-                  <View style={styles.selectionTextField}>
-                    <View style={styles.labelWrapper2}>
-                      <Text style={[styles.label5, styles.labelLayout]}>
-                        Smoking Status
-                      </Text>
-                    </View>
-                    <View
+                    {/* Save Button */}
+                    <Pressable
                       style={[
-                        styles.selectionRadioWlabelParent,
-                        styles.itemParentFlexBox,
-                      ]}>
-                      <Pressable
-                        style={styles.selectionRadioWlabel}
-                        onPress={() => setIsSmoker(true)}
-                        android_ripple={{color: '#f0f0f0'}}>
-                        <View style={styles.iconWrapper}>
-                          <View
-                            style={[
-                              styles.selectionRadio,
-                              styles.selectionLayout,
-                              isSmoker && styles.selectedRadio,
-                            ]}>
-                            {isSmoker && (
-                              <View style={styles.selectionRadioChild} />
-                            )}
-                          </View>
-                        </View>
-                        <View style={styles.iconWrapper}>
-                          <Text style={[styles.text2, styles.labelLayout]}>
-                            Yes, I smoke
-                          </Text>
-                        </View>
-                      </Pressable>
-                      <Pressable
-                        style={styles.selectionRadioWlabel}
-                        onPress={() => setIsSmoker(false)}
-                        android_ripple={{color: '#f0f0f0'}}>
-                        <View style={styles.iconWrapper}>
-                          <View
-                            style={[
-                              styles.selectionRadio1,
-                              styles.selectionLayout,
-                              !isSmoker && styles.selectedRadio,
-                            ]}>
-                            {!isSmoker && (
-                              <View style={styles.selectionRadioChild} />
-                            )}
-                          </View>
-                        </View>
-                        <View style={styles.iconWrapper}>
-                          <Text style={[styles.text2, styles.labelLayout]}>
-                            No, I do not smoke
-                          </Text>
-                        </View>
-                      </Pressable>
-                    </View>
+                        styles.saveButton,
+                        isUpdating && styles.disabledButton,
+                      ]}
+                      onPress={handleSave}
+                      android_ripple={{color: 'rgba(255,255,255,0.3)'}}
+                      disabled={isUpdating}>
+                      {isUpdating ? (
+                        <ActivityIndicator size="small" color={colors.white} />
+                      ) : (
+                        <AppText
+                          style={styles.saveButtonText}
+                          allowFontScaling={true}
+                          maxFontSizeMultiplier={1.2}>
+                          Save Changes
+                        </AppText>
+                      )}
+                    </Pressable>
                   </View>
-
-                  {/* Save */}
-                  <Pressable
-                    style={[
-                      styles.saveButton,
-                      isUpdating && styles.disabledButton,
-                    ]}
-                    onPress={handleSave}
-                    android_ripple={{color: 'rgba(255,255,255,0.3)'}}
-                    disabled={isUpdating}>
-                    {isUpdating ? (
-                      <ActivityIndicator size="small" color={colors.white} />
-                    ) : (
-                      <Text style={styles.saveButtonText}>Save Changes</Text>
-                    )}
-                  </Pressable>
                 </View>
               </View>
-            </KeyboardAwareScrollView>
-          </View>
+            </TouchableWithoutFeedback>
+          </KeyboardAwareScrollView>
         </View>
-      </TouchableWithoutFeedback>
+      </View>
     </SafeAreaView>
   );
 };
@@ -514,8 +652,6 @@ ProfileEdit.propTypes = {
   navigation: PropTypes.object,
   route: PropTypes.object,
 };
-
-/* ---------------- Styles ---------------- */
 
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#4ca9ee'},
@@ -617,8 +753,9 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   fieldInput: {
-    padding: 16,
-    height: 56,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minHeight: 56,
     borderRadius: 15,
     backgroundColor: '#fff',
     flex: 1,
@@ -638,8 +775,9 @@ const styles = StyleSheet.create({
   selectionTextField: {gap: 8, alignSelf: 'stretch'},
 
   field1: {
-    padding: 16,
-    height: 56,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minHeight: 56,
     borderRadius: 15,
     backgroundColor: '#fff',
     flex: 1,
@@ -663,7 +801,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignSelf: 'stretch',
   },
-  selectionTextField1: {height: 68, minWidth: 99, gap: 8, flex: 1},
+  selectionTextField1: {minWidth: 99, gap: 8, flex: 1},
   selectionTextFieldGroup: {
     gap: 16,
     minWidth: 214,
@@ -755,14 +893,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    marginBottom: 30,
   },
   saveButtonText: {
     color: colors.white,
     fontSize: 16,
     fontWeight: '700',
     fontFamily: 'NunitoSans12pt-Bold',
-    includeFontPadding: false,
-    textAlignVertical: 'center',
   },
   disabledButton: {opacity: 0.7},
   deleteImageButton: {
@@ -772,7 +909,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 2,

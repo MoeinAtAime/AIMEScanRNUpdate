@@ -1,4 +1,7 @@
-import React, {useState, useContext} from 'react';
+//////////////Font Increase Limit Fix
+
+// DeleteMyAccount.js
+import React, {useState, useContext, useCallback} from 'react';
 import {
   View,
   Text,
@@ -7,7 +10,7 @@ import {
   TouchableOpacity,
   ScrollView,
   BackHandler,
-  Platform, // Add this import
+  Platform,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
@@ -15,7 +18,6 @@ import {deleteUser} from 'aws-amplify/auth';
 import * as Keychain from 'react-native-keychain';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AuthContext from '../auth/context';
-import {useCallback} from 'react';
 
 const DeleteMyAccount = () => {
   const navigation = useNavigation();
@@ -23,14 +25,12 @@ const DeleteMyAccount = () => {
   const [isChecked, setIsChecked] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Handle back button
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
         navigation.goBack();
         return true;
       };
-
       const subscription = BackHandler.addEventListener(
         'hardwareBackPress',
         onBackPress,
@@ -47,20 +47,12 @@ const DeleteMyAccount = () => {
       );
       return;
     }
-
     setIsDeleting(true);
-
     try {
-      // Delete user from Cognito
       await deleteUser();
-
-      // Clear any sensitive storage
       await AsyncStorage.clear();
       await Keychain.resetGenericPassword();
-
-      // Clear user context
       setUser(null);
-
       Alert.alert(
         'Account Deleted',
         'Your account has been successfully deleted.',
@@ -68,12 +60,10 @@ const DeleteMyAccount = () => {
           {
             text: 'OK',
             onPress: () => {
-              // Navigate to welcome screen
               let rootNavigation = navigation;
               while (rootNavigation.getParent()) {
                 rootNavigation = rootNavigation.getParent();
               }
-
               rootNavigation.reset({
                 index: 0,
                 routes: [{name: 'WelcomeScreen'}],
@@ -81,6 +71,7 @@ const DeleteMyAccount = () => {
             },
           },
         ],
+        {cancelable: false},
       );
     } catch (error) {
       console.error('Error deleting account:', error);
@@ -90,7 +81,7 @@ const DeleteMyAccount = () => {
   };
 
   const toggleCheckbox = () => {
-    setIsChecked(!isChecked);
+    setIsChecked(prev => !prev);
   };
 
   return (
@@ -98,73 +89,101 @@ const DeleteMyAccount = () => {
       <View style={styles.view}>
         <View style={styles.pageContainer}>
           <View style={styles.body}>
-            {/* Header */}
             <View style={styles.header}>
               <TouchableOpacity
                 style={styles.backButton}
                 onPress={() => navigation.goBack()}
-                android_ripple={{color: '#f0f0f0'}}>
-                <Text style={styles.backButtonText}>‹</Text>
+                android_ripple={{color: '#f0f0f0'}}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Go back">
+                <Text
+                  style={styles.backButtonText}
+                  allowFontScaling={true}
+                  maxFontSizeMultiplier={1.2}>
+                  ‹
+                </Text>
               </TouchableOpacity>
-              <Text style={styles.headerTitle}>Delete Account</Text>
+              <Text
+                style={styles.headerTitle}
+                allowFontScaling={true}
+                maxFontSizeMultiplier={1.2}>
+                Delete Account
+              </Text>
               <View style={styles.placeholder} />
             </View>
 
             <ScrollView
               style={styles.scrollContainer}
               contentContainerStyle={styles.scrollContent}
-              contentInsetAdjustmentBehavior="automatic" // Add this for iOS
+              contentInsetAdjustmentBehavior="automatic"
               showsVerticalScrollIndicator={false}>
               <View style={styles.content}>
-                <Text style={styles.warningTitle}>
+                <Text
+                  style={styles.warningTitle}
+                  allowFontScaling={true}
+                  maxFontSizeMultiplier={1.2}>
                   Are you sure you want to delete your account?
                 </Text>
 
-                <Text style={styles.warningText}>
+                <Text
+                  style={styles.warningText}
+                  allowFontScaling={true}
+                  maxFontSizeMultiplier={1.2}>
                   This action is permanent and cannot be undone.
                 </Text>
-                <Text style={styles.warningText}>
+                <Text
+                  style={styles.warningText}
+                  allowFontScaling={true}
+                  maxFontSizeMultiplier={1.2}>
                   When you delete your account:
                 </Text>
 
                 <View style={styles.bulletPoints}>
-                  <Text style={styles.bulletPoint}>
-                    • Deleting this account won't cancel your AIME subscription.
-                    Cancel billing at aimescan.com;
-                  </Text>
-                  <Text style={styles.bulletPoint}>
-                    • All your personal information will be permanently removed;
-                  </Text>
-                  <Text style={styles.bulletPoint}>
-                    • Your scan history will be erased;
-                  </Text>
-                  <Text style={styles.bulletPoint}>
-                    • Profile settings and preferences will be deleted;
-                  </Text>
-                  <Text style={styles.bulletPoint}>
-                    • You'll need to create a new account to use the app again;
-                  </Text>
-                  <Text style={styles.bulletPoint}>
-                    Allow two weeks for your data to be fully purged from
-                    storage.
-                  </Text>
+                  {[
+                    "Deleting this account won't cancel your AIME subscription. Cancel billing at aimescan.com;",
+                    'All your personal information will be permanently removed;',
+                    'Your scan history will be erased;',
+                    'Profile settings and preferences will be deleted;',
+                    "You'll need to create a new account to use the app again;",
+                    'Allow two weeks for your data to be fully purged from storage.',
+                  ].map((text, idx) => (
+                    <Text
+                      key={idx}
+                      style={styles.bulletPoint}
+                      allowFontScaling={true}
+                      maxFontSizeMultiplier={1.2}>
+                      • {text}
+                    </Text>
+                  ))}
                 </View>
 
-                {/* Confirmation Checkbox */}
                 <TouchableOpacity
                   style={styles.checkboxContainer}
                   onPress={toggleCheckbox}
-                  android_ripple={{color: '#f0f0f0'}}>
+                  android_ripple={{color: '#f0f0f0'}}
+                  accessible={true}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{checked: isChecked}}>
                   <View style={[styles.checkbox, isChecked && styles.checked]}>
-                    {isChecked && <Text style={styles.checkmark}>✓</Text>}
+                    {isChecked && (
+                      <Text
+                        style={styles.checkmark}
+                        allowFontScaling={true}
+                        maxFontSizeMultiplier={1.2}>
+                        ✓
+                      </Text>
+                    )}
                   </View>
-                  <Text style={styles.checkboxText}>
+                  <Text
+                    style={styles.checkboxText}
+                    allowFontScaling={true}
+                    maxFontSizeMultiplier={1.2}>
                     I understand that deleting my account is permanent and all
                     of my data will be erased.
                   </Text>
                 </TouchableOpacity>
 
-                {/* Delete Button */}
                 <TouchableOpacity
                   style={[
                     styles.deleteButton,
@@ -172,18 +191,31 @@ const DeleteMyAccount = () => {
                   ]}
                   onPress={handleDeleteAccount}
                   disabled={!isChecked || isDeleting}
-                  android_ripple={{color: 'rgba(255,255,255,0.3)'}}>
-                  <Text style={styles.deleteButtonText}>
-                    {isDeleting ? 'Deleting Account...' : 'Delete My Account'}
+                  android_ripple={{color: 'rgba(255,255,255,0.3)'}}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel="Delete my account">
+                  <Text
+                    style={styles.deleteButtonText}
+                    allowFontScaling={true}
+                    maxFontSizeMultiplier={1.2}>
+                    {isDeleting ? 'Deleting Account…' : 'Delete My Account'}
                   </Text>
                 </TouchableOpacity>
 
-                {/* Cancel Button */}
                 <TouchableOpacity
                   style={styles.cancelButton}
                   onPress={() => navigation.goBack()}
-                  android_ripple={{color: '#f0f0f0'}}>
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                  android_ripple={{color: '#f0f0f0'}}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel="Cancel account deletion">
+                  <Text
+                    style={styles.cancelButtonText}
+                    allowFontScaling={true}
+                    maxFontSizeMultiplier={1.2}>
+                    Cancel
+                  </Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -208,95 +240,93 @@ const styles = StyleSheet.create({
   },
   body: {
     flex: 1,
-    paddingTop: Platform.OS === 'ios' ? 60 : 50, // Less padding on Android
+    paddingTop: Platform.OS === 'ios' ? 60 : 50,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Platform.OS === 'android' ? 20 : 24, // Less padding on Android
-    paddingBottom: Platform.OS === 'ios' ? 20 : 16, // Less padding on Android
+    paddingHorizontal: Platform.OS === 'android' ? 20 : 24,
+    paddingBottom: Platform.OS === 'ios' ? 20 : 16,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 20, // Add border radius for better touch feedback
-    minHeight: 44, // Add minimum touch target
-    minWidth: 44, // Add minimum touch target
+    borderRadius: 22,
+    minHeight: 44,
+    minWidth: 44,
   },
   backButtonText: {
     fontSize: 24,
     color: '#007AFF',
     fontWeight: 'bold',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: Platform.select({ios: 17, android: 18}),
     fontWeight: '700',
     color: '#000',
-    fontFamily: 'NunitoSans12pt-Bold',
     textTransform: 'uppercase',
-    includeFontPadding: false, // Add for Android
-    textAlignVertical: 'center', // Add for Android
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   placeholder: {
-    width: 40,
+    width: 44,
   },
   scrollContainer: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: Platform.OS === 'android' ? 20 : 24, // Less padding on Android
-    paddingBottom: Platform.OS === 'android' ? 50 : 40, // More padding on Android for keyboard
+    paddingHorizontal: Platform.OS === 'android' ? 20 : 24,
+    paddingBottom: Platform.OS === 'android' ? 50 : 40,
   },
   content: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: Platform.OS === 'android' ? 20 : 24, // Less padding on Android
-    shadowColor: '#000', // Add shadow for better visual depth
+    padding: Platform.OS === 'android' ? 20 : 24,
+    shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   warningTitle: {
-    fontSize: Platform.select({ios: 20, android: 19}), // Slightly smaller on Android
+    fontSize: Platform.select({ios: 20, android: 19}),
     fontWeight: '700',
     color: '#ff4444',
     textAlign: 'center',
     marginBottom: 20,
-    fontFamily: 'NunitoSans12pt-Bold',
-    includeFontPadding: false, // Add for Android
-    textAlignVertical: 'center', // Add for Android
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   warningText: {
     fontSize: Platform.select({ios: 16, android: 15}),
     color: '#333',
     lineHeight: Platform.select({ios: 24, android: 22}),
-    marginBottom: Platform.OS === 'ios' ? 20 : 18, // Less margin on Android
-    fontFamily: 'NunitoSans12pt-Regular',
+    marginBottom: Platform.OS === 'ios' ? 20 : 18,
     includeFontPadding: false,
     textAlignVertical: 'center',
   },
   bulletPoints: {
-    marginBottom: Platform.OS === 'ios' ? 30 : 25, // Less margin on Android
+    marginBottom: Platform.OS === 'ios' ? 30 : 25,
   },
   bulletPoint: {
-    fontSize: Platform.select({ios: 14, android: 13}), // Slightly smaller on Android
+    fontSize: Platform.select({ios: 14, android: 13}),
     color: '#333',
-    lineHeight: Platform.select({ios: 22, android: 20}), // Adjust line height
+    lineHeight: Platform.select({ios: 22, android: 20}),
     marginBottom: 8,
-    fontFamily: 'NunitoSans12pt-Regular',
-    includeFontPadding: false, // Add for Android
-    textAlignVertical: 'center', // Add for Android
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: 30,
-    paddingVertical: 5, // Add padding for better touch area
-    minHeight: 44, // Add minimum touch target
+    paddingVertical: 5,
+    minHeight: 44,
   },
   checkbox: {
     width: 20,
@@ -308,8 +338,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
     justifyContent: 'center',
     alignItems: 'center',
-    minWidth: 33, // Add minimum touch target
-    minHeight: 33, // Add minimum touch target
+    minWidth: 33,
+    minHeight: 33,
   },
   checked: {
     backgroundColor: '#016097',
@@ -322,22 +352,21 @@ const styles = StyleSheet.create({
   },
   checkboxText: {
     flex: 1,
-    fontSize: Platform.select({ios: 14, android: 13}), // Slightly smaller on Android
+    fontSize: Platform.select({ios: 14, android: 13}),
     color: '#333',
-    lineHeight: Platform.select({ios: 20, android: 18}), // Adjust line height
-    fontFamily: 'NunitoSans12pt-Regular',
-    includeFontPadding: false, // Add for Android
-    textAlignVertical: 'center', // Add for Android
+    lineHeight: Platform.select({ios: 20, android: 18}),
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   deleteButton: {
     backgroundColor: '#ff4444',
     borderRadius: 12,
-    paddingVertical: Platform.OS === 'android' ? 14 : 16, // Slightly less padding on Android
+    paddingVertical: Platform.OS === 'android' ? 14 : 16,
     paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
-    minHeight: 50, // Add minimum height
+    minHeight: 50,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
@@ -349,17 +378,16 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     color: '#fff',
-    fontSize: Platform.select({ios: 16, android: 15}), // Slightly smaller on Android
+    fontSize: Platform.select({ios: 16, android: 15}),
     fontWeight: '700',
-    fontFamily: 'NunitoSans12pt-Bold',
     textAlign: 'center',
-    includeFontPadding: false, // Add for Android
-    textAlignVertical: 'center', // Add for Android
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   cancelButton: {
     backgroundColor: 'transparent',
     borderRadius: 12,
-    paddingVertical: 16, // Change back from Platform.OS === 'android' ? 14 : 16
+    paddingVertical: Platform.OS === 'android' ? 14 : 16,
     paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
@@ -369,12 +397,11 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     color: '#333',
-    fontSize: Platform.select({ios: 16, android: 15}), // Slightly smaller on Android
+    fontSize: Platform.select({ios: 16, android: 15}),
     fontWeight: '600',
-    fontFamily: 'NunitoSans12pt-Bold',
     textAlign: 'center',
-    includeFontPadding: false, // Add for Android
-    textAlignVertical: 'center', // Add for Android
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
 });
 

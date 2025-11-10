@@ -1,3 +1,4 @@
+////Font Increase Limit Fix
 // LoginScreen.js
 import React, {useState, useRef, useEffect} from 'react';
 import {
@@ -15,13 +16,13 @@ import {
   Dimensions,
   Linking,
 } from 'react-native';
-import {Auth, signIn, resetPassword} from 'aws-amplify/auth';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Keychain from 'react-native-keychain';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AppButton from '../components/AppButton';
 import colors from '../config/colors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {Auth, signIn, resetPassword} from 'aws-amplify/auth'; // adjust your import if different
+import * as Keychain from 'react-native-keychain';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const STORAGE_KEY = '@login_credentials';
@@ -35,13 +36,14 @@ const LoginScreen = ({navigation}) => {
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const passwordRef = useRef(null);
 
-  const togglePasswordVisibility = () => setShowPassword(s => !s);
+  const passwordRef = useRef(null);
 
   useEffect(() => {
     loadSavedCredentials();
-    return () => setFormData(prev => ({...prev, password: ''}));
+    return () => {
+      setFormData(prev => ({...prev, password: ''}));
+    };
   }, []);
 
   const loadSavedCredentials = async () => {
@@ -99,7 +101,7 @@ const LoginScreen = ({navigation}) => {
     Alert.alert(
       'First-time login',
       'If it is your first time logging in, you should have received a temporary password from no-reply@aimescan.com. Please check your email. If you did not receive your temporary password, reach out to support@aimescan.com.',
-    ); // Cross-platform Alert dialog. :contentReference[oaicite:1]{index=1}
+    );
   };
 
   const handleLogin = async () => {
@@ -107,14 +109,16 @@ const LoginScreen = ({navigation}) => {
 
     setIsLoading(true);
     try {
-      // If already signed in, go straight in
+      // Optionally: check if already signed in
       try {
         const existingUser = await Auth.currentAuthenticatedUser();
         if (existingUser) {
           navigation.replace('AppNavigator');
           return;
         }
-      } catch {}
+      } catch (err) {
+        // not signed in
+      }
 
       const {isSignedIn, nextStep} = await signIn({
         username: formData.email.trim().toLowerCase(),
@@ -128,62 +132,31 @@ const LoginScreen = ({navigation}) => {
         return;
       }
 
-      // Multi-step handling (Amplify v6 nextStep)
-      switch (nextStep?.signInStep) {
-        case 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED':
-          // Temporary-password users must set a new password. :contentReference[oaicite:2]{index=2}
-          navigation.navigate('NewPassword', {
-            username: formData.email.trim().toLowerCase(),
-            rememberMe,
-          });
-          return;
-
-        case 'RESET_PASSWORD':
-          navigation.navigate('Reset Password', {username: formData.email});
-          return;
-
-        case 'CONFIRM_SIGN_UP':
-          navigation.navigate('Confirmation', {username: formData.email});
-          return;
-
-        default:
-          Alert.alert(
-            'Additional verification',
-            'Please complete the next step to finish sign in.',
-          );
-          return;
+      // handle next steps
+      if (nextStep?.signInStep) {
+        switch (nextStep.signInStep) {
+          case 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED':
+            navigation.navigate('NewPassword', {
+              username: formData.email.trim().toLowerCase(),
+              rememberMe,
+            });
+            return;
+          case 'RESET_PASSWORD':
+            navigation.navigate('Reset Password', {username: formData.email});
+            return;
+          case 'CONFIRM_SIGN_UP':
+            navigation.navigate('Confirmation', {username: formData.email});
+            return;
+          default:
+            Alert.alert(
+              'Additional verification',
+              'Please complete the next step to finish sign-in.',
+            );
+            return;
+        }
       }
     } catch (error) {
-      //   let msg = 'Please check your email and password and try again.';
-
-      //   // Wrong creds (generic)
-      //   if (
-      //     error?.name === 'NotAuthorizedException' ||
-      //     error?.code === 'NotAuthorizedException'
-      //   ) {
-      //     msg = 'Incorrect email or password.';
-      //   }
-      //   // Not confirmed
-      //   else if (
-      //     error?.name === 'UserNotConfirmedException' ||
-      //     error?.code === 'UserNotConfirmedException'
-      //   ) {
-      //     msg =
-      //       'Your account isn’t confirmed yet. Please check your email for the verification code.';
-      //   }
-      //   // Password reset required
-      //   else if (
-      //     error?.name === 'PasswordResetRequiredException' ||
-      //     error?.code === 'PasswordResetRequiredException'
-      //   ) {
-      //     msg =
-      //       'Your password must be reset. Tap “Forgot Password?” to continue.';
-      //   }
-
-      //   Alert.alert('Login Error', msg);
-
-      // **Add logging for diagnostics**
-      console.log('signIn error ->', {
+      console.log('signIn error →', {
         name: error?.name,
         message: error?.message,
         code: error?.code,
@@ -191,10 +164,7 @@ const LoginScreen = ({navigation}) => {
       });
 
       let msg = 'Please check your email and password and try again.';
-      if (
-        error?.name === 'NotAuthorizedException' ||
-        error?.code === 'NotAuthorizedException'
-      ) {
+      if (error?.name === 'NotAuthorizedException') {
         msg = 'Incorrect email or password.';
       } else if (error?.name === 'UserNotConfirmedException') {
         msg =
@@ -236,7 +206,7 @@ const LoginScreen = ({navigation}) => {
   const handleRegisterPress = async () => {
     try {
       await Linking.openURL('https://aimescan.com/member/register/');
-    } catch (error) {
+    } catch {
       Alert.alert(
         'Error',
         'Could not open registration page. Please try again.',
@@ -246,13 +216,14 @@ const LoginScreen = ({navigation}) => {
 
   const updateFormData = (field, value) => {
     setFormData(prev => ({...prev, [field]: value}));
-    if (errors[field]) setErrors(prev => ({...prev, [field]: null}));
+    if (errors[field]) {
+      setErrors(prev => ({...prev, [field]: null}));
+    }
   };
 
   const containerStyle = {...styles.container, paddingTop: 0};
   const scrollContentStyle = {
     ...styles.scrollContent,
-    // Keep inputs visible around the keyboard; tweak with insets. :contentReference[oaicite:3]{index=3}
     paddingBottom:
       Platform.OS === 'ios' ? Math.max(insets.bottom + 10, 30) : 40,
   };
@@ -278,7 +249,6 @@ const LoginScreen = ({navigation}) => {
           </View>
 
           <View style={styles.formContainer}>
-            {/* Email with info icon */}
             <View style={styles.inputWithIcon}>
               <TextInput
                 placeholder="Email"
@@ -296,6 +266,8 @@ const LoginScreen = ({navigation}) => {
                 returnKeyType="next"
                 onSubmitEditing={() => passwordRef.current?.focus()}
                 editable={!isLoading}
+                allowFontScaling={true}
+                maxFontSizeMultiplier={1.2}
               />
               <TouchableOpacity
                 onPress={showFirstLoginInfo}
@@ -303,7 +275,6 @@ const LoginScreen = ({navigation}) => {
                 accessibilityRole="button"
                 accessibilityLabel="First-time login information"
                 disabled={isLoading}>
-                {/* MaterialIcons info glyph from react-native-vector-icons. :contentReference[oaicite:4]{index=4} */}
                 <MaterialIcons
                   name="info-outline"
                   size={20}
@@ -312,10 +283,14 @@ const LoginScreen = ({navigation}) => {
               </TouchableOpacity>
             </View>
             {errors.email && (
-              <Text style={styles.errorText}>{errors.email}</Text>
+              <Text
+                style={styles.errorText}
+                allowFontScaling={true}
+                maxFontSizeMultiplier={1.1}>
+                {errors.email}
+              </Text>
             )}
 
-            {/* Password + eye icon */}
             <View
               style={[
                 styles.passwordContainer,
@@ -334,10 +309,12 @@ const LoginScreen = ({navigation}) => {
                 returnKeyType="done"
                 onSubmitEditing={handleLogin}
                 editable={!isLoading}
+                allowFontScaling={true}
+                maxFontSizeMultiplier={1.2}
               />
               <TouchableOpacity
                 style={styles.eyeIcon}
-                onPress={togglePasswordVisibility}
+                onPress={() => setShowPassword(!showPassword)}
                 disabled={isLoading}>
                 <MaterialIcons
                   name={showPassword ? 'visibility-off' : 'visibility'}
@@ -347,23 +324,42 @@ const LoginScreen = ({navigation}) => {
               </TouchableOpacity>
             </View>
             {errors.password && (
-              <Text style={styles.errorText}>{errors.password}</Text>
+              <Text
+                style={styles.errorText}
+                allowFontScaling={true}
+                maxFontSizeMultiplier={1.1}>
+                {errors.password}
+              </Text>
             )}
 
             <TouchableOpacity
               style={styles.rememberMeContainer}
-              onPress={() => setRememberMe(!rememberMe)}>
+              onPress={() => setRememberMe(!rememberMe)}
+              disabled={isLoading}>
               <View
                 style={[styles.checkbox, rememberMe && styles.checkboxChecked]}
               />
-              <Text style={styles.rememberMeText}>Remember Me</Text>
+              <Text
+                style={styles.rememberMeText}
+                allowFontScaling={true}
+                maxFontSizeMultiplier={1.1}>
+                Remember Me
+              </Text>
             </TouchableOpacity>
 
             <AppButton
-              title={isLoading ? 'Signing In...' : 'Log in'}
+              title={isLoading ? 'Signing In…' : 'Log In'}
               onPress={handleLogin}
               disabled={isLoading}
-              style={styles.loginButton}
+              size="large"
+              customStyle={{
+                marginBottom: 15,
+                minHeight: 56,
+                paddingVertical: 18,
+              }}
+              customTextStyle={{
+                fontSize: 18,
+              }}
             />
 
             {isLoading && (
@@ -378,15 +374,23 @@ const LoginScreen = ({navigation}) => {
               onPress={handleResetPassword}
               style={styles.forgotPassword}
               disabled={isLoading}>
-              <Text style={styles.link}>Forgot Password?</Text>
+              <Text
+                style={[styles.link, {fontSize: 14}]}
+                allowFontScaling={true}
+                maxFontSizeMultiplier={1.1}>
+                Forgot Password?
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={handleRegisterPress}
               style={styles.registerContainer}
               disabled={isLoading}>
-              <Text style={styles.registerText}>
-                Don't have an account? <Text style={styles.link}>Register</Text>
+              <Text
+                style={[styles.registerText, {fontSize: 14}]}
+                allowFontScaling={true}
+                maxFontSizeMultiplier={1.1}>
+                Don’t have an account? <Text style={styles.link}>Register</Text>
               </Text>
             </TouchableOpacity>
           </View>
@@ -415,8 +419,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingHorizontal: Platform.OS === 'android' ? 5 : 0,
   },
-
-  // Inputs
   input: {
     backgroundColor: colors.white,
     borderColor: colors.mediumColor,
@@ -444,8 +446,6 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
     textAlignVertical: 'center',
   },
-
-  // Email with info icon
   inputWithIcon: {position: 'relative'},
   inputWithRightPadding: {paddingRight: 44},
   inputIconTouch: {
@@ -458,8 +458,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  // Password input with eye icon
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -490,8 +488,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-  // Remember me
   rememberMeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -519,8 +515,6 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
     textAlignVertical: 'center',
   },
-
-  // Buttons & misc
   loginButton: {marginBottom: 15},
   loader: {marginVertical: 10},
   forgotPassword: {alignItems: 'center', marginVertical: 15},

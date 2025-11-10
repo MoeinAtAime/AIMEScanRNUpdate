@@ -1,4 +1,8 @@
-import React, {useEffect} from 'react';
+///////////////////////////////Font Increase Limit Fix
+
+// WellnessGauge.js
+
+import React, {useEffect, useRef} from 'react';
 import {
   View,
   Text,
@@ -11,6 +15,20 @@ import {
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
+// Define maximum container size (so gauge doesn’t distort on large screens)
+const MAX_CONTAINER_WIDTH = 500; // adjust as needed
+const MAX_CONTAINER_HEIGHT = 250;
+
+// Dynamic Type caps to prevent layout blow-ups
+const FONT_CAPS = {
+  title: 1.2,
+  scoreBig: 1.2,
+  scoreUnit: 1.15,
+  interpretation: 1.2,
+  tick: 1.1,
+  info: 1.1,
+};
+
 const WellnessGauge = ({score, level, label, showInfoModal}) => {
   // Default to 0 if score is not available or invalid
   const wellnessScore = typeof score === 'number' && !isNaN(score) ? score : 0;
@@ -20,7 +38,7 @@ const WellnessGauge = ({score, level, label, showInfoModal}) => {
   const wellnessLevel =
     typeof level === 'number' && !isNaN(level) ? level : null;
 
-  const animatedWidth = new Animated.Value(0);
+  const animatedWidth = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(animatedWidth, {
@@ -28,31 +46,27 @@ const WellnessGauge = ({score, level, label, showInfoModal}) => {
       duration: 1000,
       useNativeDriver: false,
     }).start();
-  }, [normalizedScore]);
+  }, [normalizedScore, animatedWidth]);
 
-  // Determine color based on score
-  const getGaugeColor = score => {
-    if (score <= 0.2) return '#ff6b6b'; // Needs Attention (1-2)
-    if (score <= 0.4) return '#ffa94d'; // Below Average (3-4)
-    if (score <= 0.6) return '#74c0fc'; // Normal (5-6)
-    if (score <= 0.8) return '#69db7c'; // Above Average (7-8)
-    return '#38d9a9'; // Excellent (9-10)
+  // Color logic
+  const getGaugeColor = val => {
+    if (val <= 0.2) return '#ff6b6b'; // Needs Attention
+    if (val <= 0.4) return '#ffa94d'; // Below Average
+    if (val <= 0.6) return '#74c0fc'; // Normal
+    if (val <= 0.8) return '#69db7c'; // Above Average
+    return '#38d9a9'; // Excellent
   };
 
-  // Get interpretation text based on wellness_level
-  const getInterpretationText = level => {
-    if (level === null) {
-      // Fallback to using score if level is not provided
-      const value = score * 10;
+  const getInterpretationText = lvl => {
+    if (lvl === null) {
+      const value = wellnessScore;
       if (value <= 2) return 'Needs Attention';
       if (value <= 4) return 'Below Average';
       if (value <= 6) return 'Normal';
       if (value <= 8) return 'Above Average';
       return 'Excellent';
     }
-
-    // Use wellness_level for interpretation
-    switch (level) {
+    switch (lvl) {
       case 1:
         return 'Needs Attention';
       case 2:
@@ -64,26 +78,22 @@ const WellnessGauge = ({score, level, label, showInfoModal}) => {
     }
   };
 
-  // Get interpretation color based on wellness_level
-  const getInterpretationColor = level => {
-    if (level === null) {
-      // Fallback to using score if level is not provided
-      const value = score * 10;
-      if (value <= 4) return '#E67C73'; // Red for concerning levels
-      if (value <= 6) return '#4285F4'; // Blue for normal
-      return '#57BB8A'; // Green for good
+  const getInterpretationColor = lvl => {
+    if (lvl === null) {
+      const value = wellnessScore;
+      if (value <= 4) return '#E67C73'; // Red
+      if (value <= 6) return '#4285F4'; // Blue
+      return '#57BB8A'; // Green
     }
-
-    // Use wellness_level for color
-    switch (level) {
+    switch (lvl) {
       case 1:
-        return '#E67C73'; // Red for Needs Attention
+        return '#E67C73';
       case 2:
-        return '#4285F4'; // Blue for Average
+        return '#4285F4';
       case 3:
-        return '#57BB8A'; // Green for Excellent
+        return '#57BB8A';
       default:
-        return '#4285F4'; // Blue for fallback
+        return '#4285F4';
     }
   };
 
@@ -91,38 +101,86 @@ const WellnessGauge = ({score, level, label, showInfoModal}) => {
   const interpretationColor = getInterpretationColor(wellnessLevel);
   const gaugeColor = getGaugeColor(normalizedScore);
 
-  // Wellness Index description for info modal
   const wellnessDescription =
     'Your Wellness Score is a number from 1 to 10 that estimates your cardiovascular risk over the next 5-10 years, with higher scores indicating lower risk. The score analyzes key measurements, including heart rate, heart rate variability, stress levels, blood pressure, and oxygen saturation. The lowest value of these indicators determines your score, so if one measurement is outside the health range, your overall Wellness Score will reflect that. For accuracy, measure your Wellness Score while at rest, since vital signs change with activity, breathing patterns, and stress. Repeated measurements over time help ensure the reliability of results.';
+
   const handleInfoPress = () => {
-    if (showInfoModal) {
-      showInfoModal(wellnessDescription);
-    }
+    if (!showInfoModal) return;
+    const title = label || 'Wellness Score';
+    const info = wellnessDescription;
+
+    // Call with two args (info, title) to match your previous pattern
+    // If your modal expects (title, info), swap the order here.
+    showInfoModal(info, title);
   };
 
+  // Responsive container sizing
+  const containerWidth = Math.min(screenWidth * 0.9, MAX_CONTAINER_WIDTH);
+  const containerPadding = containerWidth * 0.05;
+
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {width: containerWidth, padding: containerPadding},
+      ]}>
       <View style={styles.headerContainer}>
-        <Text style={styles.title}>{label || 'Wellness Score'}</Text>
+        <Text
+          style={styles.title}
+          allowFontScaling
+          maxFontSizeMultiplier={FONT_CAPS.title}
+          numberOfLines={1}
+          adjustsFontSizeToFit>
+          {label || 'Wellness Score'}
+        </Text>
         <View style={styles.rightContainer}>
           <View style={styles.scoreContainer}>
-            <Text style={styles.score}>
+            <Text
+              style={styles.score}
+              allowFontScaling
+              maxFontSizeMultiplier={FONT_CAPS.scoreBig}
+              numberOfLines={1}
+              adjustsFontSizeToFit>
               {Math.round(wellnessScore * 10) / 10}
             </Text>
-            <Text style={styles.maxScore}>/10</Text>
+            <Text
+              style={styles.maxScore}
+              allowFontScaling
+              maxFontSizeMultiplier={FONT_CAPS.scoreUnit}>
+              /10
+            </Text>
           </View>
-          <TouchableOpacity style={styles.infoButton} onPress={handleInfoPress}>
-            <Text style={styles.infoButtonText}>!</Text>
+          <TouchableOpacity
+            style={styles.infoButton}
+            onPress={handleInfoPress}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="What does the Wellness Score mean?"
+            accessibilityHint="Opens a description explaining the score">
+            <Text
+              style={styles.infoButtonText}
+              allowFontScaling
+              maxFontSizeMultiplier={FONT_CAPS.info}>
+              !
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      <Text style={[styles.interpretation, {color: interpretationColor}]}>
+      <Text
+        style={[styles.interpretation, {color: interpretationColor}]}
+        allowFontScaling
+        maxFontSizeMultiplier={FONT_CAPS.interpretation}
+        numberOfLines={1}
+        adjustsFontSizeToFit>
         {interpretation}
       </Text>
 
       <View style={styles.gaugeContainer}>
-        <View style={styles.gaugeBackground}>
+        <View
+          style={styles.gaugeBackground}
+          accessible
+          accessibilityRole="progressbar">
           <Animated.View
             style={[
               styles.gaugeFill,
@@ -136,11 +194,15 @@ const WellnessGauge = ({score, level, label, showInfoModal}) => {
             ]}
           />
         </View>
-
         <View style={styles.tickMarksContainer}>
-          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(tick => (
+          {Array.from({length: 11}, (_, tick) => (
             <View key={tick} style={styles.tickMark}>
-              <Text style={styles.tickLabel}>{tick}</Text>
+              <Text
+                style={styles.tickLabel}
+                allowFontScaling
+                maxFontSizeMultiplier={FONT_CAPS.tick}>
+                {tick}
+              </Text>
             </View>
           ))}
         </View>
@@ -153,10 +215,8 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: 'white',
     borderRadius: 15,
-    padding: screenWidth * 0.05, // Responsive padding
-    marginBottom: screenHeight * 0.025, // Responsive margin
-
-    // Platform-specific shadows
+    marginBottom: screenHeight * 0.025,
+    // Platform shadows
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -168,144 +228,115 @@ const styles = StyleSheet.create({
         elevation: 3,
       },
     }),
+    alignSelf: 'center',
+    // max height constraint
+    maxHeight: MAX_CONTAINER_HEIGHT,
   },
-
   headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: screenHeight * 0.012, // Responsive margin
+    marginBottom: screenHeight * 0.012,
   },
-
   title: {
-    fontSize: 18, // Keep original font size
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-
-    // Platform-specific font adjustments
+    includeFontPadding: false,
+    textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
     ...Platform.select({
-      ios: {
-        fontFamily: 'System',
-      },
-      android: {
-        fontFamily: 'Roboto',
-      },
+      ios: {fontFamily: 'System'},
+      android: {fontFamily: 'Roboto'},
     }),
   },
-
   rightContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-
   scoreContainer: {
     flexDirection: 'row',
     alignItems: 'baseline',
   },
-
   score: {
-    fontSize: 28, // Keep original font size
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#333',
-
-    // Platform-specific font adjustments
+    includeFontPadding: false,
+    textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
     ...Platform.select({
-      ios: {
-        fontFamily: 'System',
-      },
-      android: {
-        fontFamily: 'Roboto',
-      },
+      ios: {fontFamily: 'System'},
+      android: {fontFamily: 'Roboto'},
     }),
   },
-
   maxScore: {
-    fontSize: 16, // Keep original font size
+    fontSize: 16,
     color: '#666',
     marginLeft: 2,
-
-    // Platform-specific font adjustments
+    includeFontPadding: false,
+    textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
     ...Platform.select({
-      ios: {
-        fontFamily: 'System',
-      },
-      android: {
-        fontFamily: 'Roboto',
-      },
+      ios: {fontFamily: 'System'},
+      android: {fontFamily: 'Roboto'},
     }),
   },
-
   infoButton: {
-    width: 22, // Keep original size
-    height: 22, // Keep original size
+    width: 22,
+    height: 22,
     borderRadius: 11,
     backgroundColor: '#4285F4',
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: screenWidth * 0.025, // Responsive margin
+    marginLeft: screenWidth * 0.025,
   },
-
   infoButtonText: {
     color: 'white',
-    fontSize: 14, // Keep original font size
+    fontSize: 14,
     fontWeight: 'bold',
+    includeFontPadding: false,
+    textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
   },
-
   interpretation: {
-    fontSize: 16, // Keep original font size
+    fontSize: 16,
     fontWeight: '600',
-    marginBottom: screenHeight * 0.018, // Responsive margin
-
-    // Platform-specific font adjustments
+    marginBottom: screenHeight * 0.018,
+    textAlign: 'center',
+    includeFontPadding: false,
+    textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
     ...Platform.select({
-      ios: {
-        fontFamily: 'System',
-      },
-      android: {
-        fontFamily: 'Roboto',
-      },
+      ios: {fontFamily: 'System'},
+      android: {fontFamily: 'Roboto'},
     }),
   },
-
   gaugeContainer: {
     position: 'relative',
-    marginBottom: screenHeight * 0.025, // Responsive margin
+    marginBottom: screenHeight * 0.025,
   },
-
   gaugeBackground: {
-    height: 20, // Keep original height
+    height: 20,
     backgroundColor: '#f0f0f0',
     borderRadius: 10,
     overflow: 'hidden',
   },
-
   gaugeFill: {
     height: '100%',
     borderRadius: 10,
   },
-
   tickMarksContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: screenHeight * 0.006, // Responsive margin
+    marginTop: screenHeight * 0.006,
   },
-
   tickMark: {
     alignItems: 'center',
   },
-
   tickLabel: {
-    fontSize: 10, // Keep original font size
+    fontSize: 10,
     color: '#888',
-
-    // Platform-specific font adjustments
+    includeFontPadding: false,
+    textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
     ...Platform.select({
-      ios: {
-        fontFamily: 'System',
-      },
-      android: {
-        fontFamily: 'Roboto',
-      },
+      ios: {fontFamily: 'System'},
+      android: {fontFamily: 'Roboto'},
     }),
   },
 });

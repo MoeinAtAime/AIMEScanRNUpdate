@@ -1,3 +1,5 @@
+/////////////////Font Increase Limit Fix
+
 import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
@@ -12,6 +14,13 @@ import colors from '../config/colors';
 
 const STORAGE_KEYS = {
   SCAN_RESULTS: 'scanResults',
+};
+
+// Centralized caps for Dynamic Type
+const FONT_CAPS = {
+  message: 1.15, // main line
+  count: 1.1, // secondary/count line
+  loading: 1.1, // loading message
 };
 
 const MotivationalMessage = ({
@@ -36,7 +45,6 @@ const MotivationalMessage = ({
   // Responsive calculations
   const isSmallScreen = dimensions.width < 375;
   const isMediumScreen = dimensions.width >= 375 && dimensions.width < 414;
-  const isLargeScreen = dimensions.width >= 414;
   const isTablet = dimensions.width >= 768;
   const isLandscape = dimensions.width > dimensions.height;
 
@@ -138,7 +146,7 @@ const MotivationalMessage = ({
 
     const messageArray = messages[scanCount] || messages.default;
 
-    // Use a simple rotation based on the day to provide variety
+    // Rotate message by day of year for variety
     const dayOfYear = Math.floor(
       (new Date() - new Date(new Date().getFullYear(), 0, 0)) /
         (1000 * 60 * 60 * 24),
@@ -156,30 +164,21 @@ const MotivationalMessage = ({
         const parsedData = JSON.parse(data);
         const today = new Date().toLocaleDateString('en-US');
 
-        // Filter scans from today
         const todayScans = parsedData.filter(scan => {
           const scanDate = new Date(scan.timeStamp).toLocaleDateString('en-US');
           return scanDate === today;
         });
 
         setDailyScanCount(todayScans.length);
-
-        // Call the callback if provided to update parent component
-        if (onScanCountUpdate) {
-          onScanCountUpdate(todayScans.length);
-        }
+        onScanCountUpdate?.(todayScans.length);
       } else {
         setDailyScanCount(0);
-        if (onScanCountUpdate) {
-          onScanCountUpdate(0);
-        }
+        onScanCountUpdate?.(0);
       }
     } catch (error) {
       console.error('Error retrieving scan data:', error);
       setDailyScanCount(0);
-      if (onScanCountUpdate) {
-        onScanCountUpdate(0);
-      }
+      onScanCountUpdate?.(0);
     } finally {
       setIsLoading(false);
     }
@@ -196,7 +195,6 @@ const MotivationalMessage = ({
       marginBottom: currentConfig.marginBottom,
       paddingHorizontal: currentConfig.containerPadding,
       backgroundColor: currentTheme.backgroundColor,
-      // Ensure proper layout on landscape mode
       ...(isLandscape && {
         paddingHorizontal: currentConfig.containerPadding * 1.5,
       }),
@@ -211,13 +209,8 @@ const MotivationalMessage = ({
       fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-medium',
       includeFontPadding: false,
       textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
-      // Responsive text handling
-      ...(isTablet && {
-        maxWidth: 600,
-      }),
-      ...(isSmallScreen && {
-        flexShrink: 1,
-      }),
+      ...(isTablet && {maxWidth: 600}),
+      ...(isSmallScreen && {flexShrink: 1}),
     },
     countText: {
       fontSize: currentConfig.countSize,
@@ -263,7 +256,9 @@ const MotivationalMessage = ({
             />
           )}
           <Text
-            style={[responsiveStyles.loadingText, customStyles.loadingText]}>
+            style={[responsiveStyles.loadingText, customStyles.loadingText]}
+            allowFontScaling
+            maxFontSizeMultiplier={FONT_CAPS.loading}>
             Loading...
           </Text>
         </View>
@@ -271,25 +266,31 @@ const MotivationalMessage = ({
     );
   }
 
+  const message = getMotivationalMessage(dailyScanCount);
+
   return (
     <View
       style={[responsiveStyles.container, customStyles.container]}
-      accessible={true}
+      accessible
       accessibilityRole="text"
-      accessibilityLabel={`Motivational message: ${getMotivationalMessage(
-        dailyScanCount,
-      )}${
+      accessibilityLabel={`Motivational message: ${message}${
         showScanCount && dailyScanCount > 0
           ? `. Today's scan count: ${dailyScanCount}`
           : ''
       }`}>
-      <Text style={[responsiveStyles.messageText, customStyles.messageText]}>
-        {getMotivationalMessage(dailyScanCount)}
+      <Text
+        style={[responsiveStyles.messageText, customStyles.messageText]}
+        allowFontScaling
+        maxFontSizeMultiplier={FONT_CAPS.message}>
+        {message}
       </Text>
+
       {showScanCount && dailyScanCount > 0 && (
         <Text
           style={[responsiveStyles.countText, customStyles.countText]}
-          accessible={true}
+          allowFontScaling
+          maxFontSizeMultiplier={FONT_CAPS.count}
+          accessible
           accessibilityLabel={`You have completed ${dailyScanCount} scan${
             dailyScanCount === 1 ? '' : 's'
           } today`}>
@@ -300,10 +301,12 @@ const MotivationalMessage = ({
   );
 };
 
-// Export both the component and a version with ref for refresh capability
 export default MotivationalMessage;
 
-// Alternative export with forwardRef for refresh functionality
+/* ===========================
+   ForwardRef variant with limits
+   =========================== */
+
 export const MotivationalMessageWithRef = React.forwardRef((props, ref) => {
   const [dailyScanCount, setDailyScanCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -313,7 +316,7 @@ export const MotivationalMessageWithRef = React.forwardRef((props, ref) => {
     onScanCountUpdate,
     size = 'medium',
     theme = 'light',
-    showScanCount = true, // Default to true for ref version
+    showScanCount = true, // default true here
     customStyles = {},
     animationEnabled = true,
   } = props;
@@ -325,7 +328,7 @@ export const MotivationalMessageWithRef = React.forwardRef((props, ref) => {
     return () => subscription?.remove();
   }, []);
 
-  // Responsive calculations (same as main component)
+  // Responsive calculations
   const isSmallScreen = dimensions.width < 375;
   const isMediumScreen = dimensions.width >= 375 && dimensions.width < 414;
   const isTablet = dimensions.width >= 768;
@@ -338,7 +341,6 @@ export const MotivationalMessageWithRef = React.forwardRef((props, ref) => {
     return baseSize * 1.1;
   };
 
-  // Size configurations (same as main component)
   const sizeConfigs = {
     small: {
       containerPadding: getScaledSize(12),
@@ -374,7 +376,6 @@ export const MotivationalMessageWithRef = React.forwardRef((props, ref) => {
 
   const currentConfig = sizeConfigs[size] || sizeConfigs.medium;
 
-  // Theme configurations (same as main component)
   const themes = {
     light: {
       messageColor: colors.primaryColor || '#00AA00',
@@ -450,22 +451,15 @@ export const MotivationalMessageWithRef = React.forwardRef((props, ref) => {
         });
 
         setDailyScanCount(todayScans.length);
-
-        if (onScanCountUpdate) {
-          onScanCountUpdate(todayScans.length);
-        }
+        onScanCountUpdate?.(todayScans.length);
       } else {
         setDailyScanCount(0);
-        if (onScanCountUpdate) {
-          onScanCountUpdate(0);
-        }
+        onScanCountUpdate?.(0);
       }
     } catch (error) {
       console.error('Error retrieving scan data:', error);
       setDailyScanCount(0);
-      if (onScanCountUpdate) {
-        onScanCountUpdate(0);
-      }
+      onScanCountUpdate?.(0);
     } finally {
       setIsLoading(false);
     }
@@ -481,7 +475,6 @@ export const MotivationalMessageWithRef = React.forwardRef((props, ref) => {
     isLoading: () => isLoading,
   }));
 
-  // Dynamic styles (same structure as main component)
   const responsiveStyles = StyleSheet.create({
     container: {
       alignItems: 'center',
@@ -502,12 +495,8 @@ export const MotivationalMessageWithRef = React.forwardRef((props, ref) => {
       fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-medium',
       includeFontPadding: false,
       textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
-      ...(isTablet && {
-        maxWidth: 600,
-      }),
-      ...(isSmallScreen && {
-        flexShrink: 1,
-      }),
+      ...(isTablet && {maxWidth: 600}),
+      ...(isSmallScreen && {flexShrink: 1}),
     },
     countText: {
       fontSize: currentConfig.countSize,
@@ -553,7 +542,9 @@ export const MotivationalMessageWithRef = React.forwardRef((props, ref) => {
             />
           )}
           <Text
-            style={[responsiveStyles.loadingText, customStyles.loadingText]}>
+            style={[responsiveStyles.loadingText, customStyles.loadingText]}
+            allowFontScaling
+            maxFontSizeMultiplier={FONT_CAPS.loading}>
             Loading...
           </Text>
         </View>
@@ -561,25 +552,31 @@ export const MotivationalMessageWithRef = React.forwardRef((props, ref) => {
     );
   }
 
+  const message = getMotivationalMessage(dailyScanCount);
+
   return (
     <View
       style={[responsiveStyles.container, customStyles.container]}
-      accessible={true}
+      accessible
       accessibilityRole="text"
-      accessibilityLabel={`Motivational message: ${getMotivationalMessage(
-        dailyScanCount,
-      )}${
+      accessibilityLabel={`Motivational message: ${message}${
         showScanCount && dailyScanCount > 0
           ? `. Today's scan count: ${dailyScanCount}`
           : ''
       }`}>
-      <Text style={[responsiveStyles.messageText, customStyles.messageText]}>
-        {getMotivationalMessage(dailyScanCount)}
+      <Text
+        style={[responsiveStyles.messageText, customStyles.messageText]}
+        allowFontScaling
+        maxFontSizeMultiplier={FONT_CAPS.message}>
+        {message}
       </Text>
+
       {showScanCount && dailyScanCount > 0 && (
         <Text
           style={[responsiveStyles.countText, customStyles.countText]}
-          accessible={true}
+          allowFontScaling
+          maxFontSizeMultiplier={FONT_CAPS.count}
+          accessible
           accessibilityLabel={`You have completed ${dailyScanCount} scan${
             dailyScanCount === 1 ? '' : 's'
           } today`}>

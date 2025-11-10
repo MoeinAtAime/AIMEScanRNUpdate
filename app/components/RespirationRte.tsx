@@ -1,3 +1,5 @@
+//////////////////////Font Increase Limit Fix
+
 import * as React from 'react';
 import {
   AlertCodes,
@@ -12,10 +14,23 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
+// Dynamic Type caps
+const FONT_CAPS = {
+  value: 1.15, // limit text scaling
+};
+
+// Simple responsive helpers
+const isSmallScreen = screenWidth < 375;
+const isTablet = screenWidth >= 768;
+const getScaledSize = base => {
+  if (isTablet) return base * 1.2;
+  if (isSmallScreen) return base * 0.9;
+  return base;
+};
+const ICON_SIZE = getScaledSize(24);
+
 /**
- * RespirationRate - A component that displays respiration rate data if available and valid
- *
- * @returns {JSX.Element} - Rendered respiration rate text
+ * RespirationRate - Displays respiration rate if available and valid
  */
 export const RespirationRate = React.memo(() => {
   const vitalSign = useVitalSigns();
@@ -23,14 +38,14 @@ export const RespirationRate = React.memo(() => {
   const warning = useSessionWarnings();
   const [respRate, setRespRate] = React.useState();
 
-  // Update respiration rate when valid vital sign data is available
+  // Update respiration rate when valid data is available
   React.useEffect(() => {
     if (vitalSign && vitalSign.type === VitalSignTypes.RESPIRATION_RATE) {
       setRespRate(vitalSign.value);
     }
   }, [vitalSign]);
 
-  // Clear respiration rate if there is a measurement warning
+  // Clear on warning
   React.useEffect(() => {
     if (
       warning?.code ===
@@ -40,37 +55,49 @@ export const RespirationRate = React.memo(() => {
     }
   }, [warning]);
 
-  // Reset respiration rate when session state is starting
+  // Reset on new session
   React.useEffect(() => {
     if (sessionState === SessionState.STARTING) {
       setRespRate(undefined);
     }
   }, [sessionState]);
 
-  // More strict validation for actual numeric values
+  // Validation
+  const numeric = Number(respRate);
   const hasValidValue =
     respRate &&
     respRate !== '--' &&
     respRate !== 'N/A' &&
     respRate !== '' &&
-    respRate !== 0 &&
-    !isNaN(Number(respRate)) &&
-    Number(respRate) > 0 &&
-    Number(respRate) < 100;
+    !isNaN(numeric) &&
+    numeric > 0 &&
+    numeric < 100;
 
   return (
-    <View style={styles.container}>
+    <View
+      style={styles.container}
+      accessible
+      accessibilityRole="text"
+      accessibilityLabel={
+        hasValidValue
+          ? `Respiration rate ${numeric} breaths per minute`
+          : 'Respiration rate not available'
+      }>
       <View style={styles.contentContainer}>
         <View style={styles.valueContainer}>
-          {hasValidValue ? (
-            <MaterialCommunityIcons name="lungs" size={24} color="#4CAF50" />
-          ) : (
-            <MaterialCommunityIcons name="lungs" size={24} color="#000" />
-          )}
+          <MaterialCommunityIcons
+            name="lungs"
+            size={ICON_SIZE}
+            color={hasValidValue ? '#4CAF50' : '#000'}
+          />
 
           <Text
-            style={[styles.value, {color: hasValidValue ? '#4CAF50' : '#999'}]}>
-            {hasValidValue ? `${respRate} br/min` : '--'}
+            style={[styles.value, {color: hasValidValue ? '#4CAF50' : '#999'}]}
+            allowFontScaling
+            maxFontSizeMultiplier={FONT_CAPS.value}
+            numberOfLines={1}
+            ellipsizeMode="tail">
+            {hasValidValue ? `${numeric} brpm` : '--'}
           </Text>
         </View>
       </View>
@@ -81,11 +108,11 @@ export const RespirationRate = React.memo(() => {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: 'rgba(255, 255, 255, 0.85)',
-    paddingHorizontal: screenWidth * 0.025, // Responsive padding
-    paddingVertical: screenHeight * 0.006, // Responsive padding
+    paddingHorizontal: screenWidth * 0.025,
+    paddingVertical: screenHeight * 0.006,
     borderRadius: 20,
 
-    // Platform-specific shadows
+    // Shadows
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -98,10 +125,10 @@ const styles = StyleSheet.create({
       },
     }),
 
-    // Responsive width while maintaining original proportions
-    width: screenWidth * 0.34, // Scale with screen width (slightly wider for "br/min")
-    minWidth: 130, // Keep original minimum width
-    maxWidth: 170, // Reasonable maximum for large screens
+    // Responsive sizing
+    width: screenWidth * 0.34,
+    minWidth: 130,
+    maxWidth: 180,
   },
 
   contentContainer: {
@@ -111,21 +138,20 @@ const styles = StyleSheet.create({
   },
 
   value: {
-    fontSize: 15, // Keep original font size
+    fontSize: getScaledSize(15),
     fontWeight: 'bold',
-    marginLeft: 6, // Keep original margin
-    minWidth: screenWidth * 0.2, // Responsive minimum width
+    marginLeft: 6,
+    minWidth: screenWidth * 0.2,
     textAlign: 'left',
 
-    // Platform-specific font adjustments
     ...Platform.select({
-      ios: {
-        fontFamily: 'System',
-      },
-      android: {
-        fontFamily: 'Roboto',
-      },
+      ios: {fontFamily: 'System'},
+      android: {fontFamily: 'Roboto'},
     }),
+
+    includeFontPadding: false,
+    textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
+    lineHeight: getScaledSize(18),
   },
 
   valueContainer: {

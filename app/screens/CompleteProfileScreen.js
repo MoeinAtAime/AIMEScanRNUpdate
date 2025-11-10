@@ -1,9 +1,11 @@
-////////////////////
+//////////////////////////////Font Increase Limit Fix
 
+// CompleteProfileScreen.tsx — updated with font-scaling caps for accessibility
+// CompleteProfileScreen.js
+// screens/CompleteProfileScreen.js
 import React, {useState} from 'react';
 import {
   View,
-  Text,
   TextInput,
   StyleSheet,
   TouchableOpacity,
@@ -13,6 +15,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  Text,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {useRoute} from '@react-navigation/native';
@@ -30,22 +33,21 @@ const feetInchesToCm = (feet, inches) =>
 
 export default function CompleteProfileScreen({navigation}) {
   const route = useRoute();
-  const prefill = route.params?.prefill || {};
+  const prefill =
+    route.params && route.params.prefill ? route.params.prefill : {};
 
   const [ui, setUi] = useState({
     step: 1,
     showDatePicker: false,
     loading: false,
   });
-
-  // NEW: agreement checkbox state (Step 1)
   const [immutableAck, setImmutableAck] = useState(false);
-
   const [form, setForm] = useState({
     birthdate: prefill.birthdate
       ? new Date(prefill.birthdate)
       : new Date(1995, 0, 1),
     gender: prefill.gender || '',
+    displayName: prefill.displayName || '',
     heightFeet: (prefill.heightFeet ?? '').toString(),
     heightInches: (prefill.heightInches ?? '00').toString().padStart(2, '0'),
     weight: (prefill.weight ?? '150').toString().replace(/[^0-9]/g, ''),
@@ -55,13 +57,11 @@ export default function CompleteProfileScreen({navigation}) {
   const handle = (k, v) => setForm(prev => ({...prev, [k]: v}));
 
   const validateStep1 = () => {
-    // Age check
     const today = new Date();
     const bd = new Date(form.birthdate);
     let age = today.getFullYear() - bd.getFullYear();
     const m = today.getMonth() - bd.getMonth();
     if (m < 0 || (m === 0 && today.getDate() < bd.getDate())) age--;
-
     if (isNaN(age) || age < AGE_RANGE.min || age > AGE_RANGE.max) {
       Alert.alert(
         'Invalid Age',
@@ -69,13 +69,14 @@ export default function CompleteProfileScreen({navigation}) {
       );
       return false;
     }
-
     if (!form.gender) {
       Alert.alert('Missing Information', 'Please select your sex at birth.');
       return false;
     }
-
-    // NEW: must acknowledge immutability
+    if (form.displayName.trim() === '') {
+      Alert.alert('Missing Information', 'Please enter your Display Name.');
+      return false;
+    }
     if (!immutableAck) {
       Alert.alert(
         'Please Confirm',
@@ -83,12 +84,10 @@ export default function CompleteProfileScreen({navigation}) {
       );
       return false;
     }
-
     return true;
   };
 
   const validateStep2 = () => {
-    // Weight (lbs)
     const w = parseInt(form.weight, 10);
     if (isNaN(w) || w < WEIGHT_RANGE.lbs.min || w > WEIGHT_RANGE.lbs.max) {
       Alert.alert(
@@ -97,8 +96,6 @@ export default function CompleteProfileScreen({navigation}) {
       );
       return false;
     }
-
-    // Height feet + inches (00–11)
     const feet = parseInt(form.heightFeet, 10);
     const inches = parseInt(form.heightInches, 10);
     if (isNaN(feet) || feet < 4 || feet > 7) {
@@ -120,7 +117,6 @@ export default function CompleteProfileScreen({navigation}) {
       );
       return false;
     }
-
     const cm = feetInchesToCm(feet, inches);
     if (cm < HEIGHT_RANGE.cm.min || cm > HEIGHT_RANGE.cm.max) {
       Alert.alert(
@@ -129,7 +125,6 @@ export default function CompleteProfileScreen({navigation}) {
       );
       return false;
     }
-
     if (!form.userSmokingStatus) {
       Alert.alert(
         'Missing Information',
@@ -137,7 +132,6 @@ export default function CompleteProfileScreen({navigation}) {
       );
       return false;
     }
-
     return true;
   };
 
@@ -147,7 +141,6 @@ export default function CompleteProfileScreen({navigation}) {
       setUi(s => ({...s, step: 2}));
       return;
     }
-
     if (!validateStep2()) return;
 
     const heightFeet = parseInt(form.heightFeet || '0', 10);
@@ -158,9 +151,10 @@ export default function CompleteProfileScreen({navigation}) {
     const payload = {
       birthdate: form.birthdate.toISOString().split('T')[0],
       gender: form.gender,
-      'custom:Weight': form.weight, // lbs string
-      'custom:Height': `${heightFeet}.${heightInchesStr}`, // e.g., "5.09"
-      'custom:userSmokingStatus': form.userSmokingStatus, // "Yes" | "No"
+      'custom:userDisplayName': form.displayName,
+      'custom:Weight': form.weight,
+      'custom:Height': `${heightFeet}.${heightInchesStr}`,
+      'custom:userSmokingStatus': form.userSmokingStatus,
     };
 
     try {
@@ -182,7 +176,10 @@ export default function CompleteProfileScreen({navigation}) {
       <TouchableOpacity
         onPress={() => setUi(s => ({...s, showDatePicker: true}))}
         style={styles.dateInput}>
-        <Text style={styles.dateText}>
+        <Text
+          style={styles.dateText}
+          allowFontScaling
+          maxFontSizeMultiplier={1.2}>
           Birthdate: {form.birthdate.toLocaleDateString()}
         </Text>
       </TouchableOpacity>
@@ -215,7 +212,12 @@ export default function CompleteProfileScreen({navigation}) {
           />
         ))}
 
-      <Text style={styles.sectionLabel}>Sex at Birth</Text>
+      <Text
+        style={styles.sectionLabel}
+        allowFontScaling
+        maxFontSizeMultiplier={1.2}>
+        Sex at Birth
+      </Text>
       <View style={styles.genderRow}>
         <TouchableOpacity
           style={[
@@ -227,7 +229,9 @@ export default function CompleteProfileScreen({navigation}) {
             style={[
               styles.genderText,
               form.gender === 'Male' && styles.genderTextSelected,
-            ]}>
+            ]}
+            allowFontScaling
+            maxFontSizeMultiplier={1.1}>
             Male
           </Text>
         </TouchableOpacity>
@@ -241,13 +245,32 @@ export default function CompleteProfileScreen({navigation}) {
             style={[
               styles.genderText,
               form.gender === 'Female' && styles.genderTextSelected,
-            ]}>
+            ]}
+            allowFontScaling
+            maxFontSizeMultiplier={1.1}>
             Female
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* NEW: Immutable fields acknowledgement */}
+      <View style={{marginVertical: 12}}>
+        <Text
+          style={[styles.sectionLabel, {marginBottom: 4}]}
+          allowFontScaling
+          maxFontSizeMultiplier={1.2}>
+          Display Name
+        </Text>
+        <TextInput
+          placeholder="Your display name"
+          placeholderTextColor={colors.medium}
+          value={form.displayName}
+          onChangeText={v => handle('displayName', v)}
+          style={styles.input}
+          allowFontScaling
+          maxFontSizeMultiplier={1.1}
+        />
+      </View>
+
       <Pressable
         onPress={() => setImmutableAck(v => !v)}
         style={styles.checkRow}
@@ -259,27 +282,45 @@ export default function CompleteProfileScreen({navigation}) {
             styles.checkboxBox,
             immutableAck && styles.checkboxBoxChecked,
           ]}>
-          {immutableAck ? <Text style={styles.checkboxCheck}>✓</Text> : null}
+          {immutableAck && (
+            <Text
+              style={styles.checkboxCheck}
+              allowFontScaling
+              maxFontSizeMultiplier={1.1}>
+              ✓
+            </Text>
+          )}
         </View>
-        <Text style={styles.checkLabel}>
+        <Text
+          style={styles.checkLabel}
+          allowFontScaling
+          maxFontSizeMultiplier={1.1}>
           I understand my date of birth and sex at birth cannot be changed
           later.
         </Text>
       </Pressable>
 
+      {/* Block-style button here is fine; keep full width.
+          Add compact to keep height stable on large text. */}
       <AppButton
         title="Next"
-        color={colors.primaryColor}
+        color="primaryColor"
         onPress={saveAndContinue}
         disabled={ui.loading || !immutableAck}
         loading={ui.loading}
+        compact
       />
     </>
   );
 
   const renderStep2 = () => (
     <>
-      <Text style={styles.sectionLabel}>Height</Text>
+      <Text
+        style={styles.sectionLabel}
+        allowFontScaling
+        maxFontSizeMultiplier={1.2}>
+        Height
+      </Text>
       <View style={styles.heightRow}>
         <View style={styles.heightInputWrap}>
           <TextInput
@@ -290,8 +331,15 @@ export default function CompleteProfileScreen({navigation}) {
             style={styles.heightInput}
             keyboardType="numeric"
             maxLength={1}
+            allowFontScaling
+            maxFontSizeMultiplier={1.1}
           />
-          <Text style={styles.heightUnit}>feet</Text>
+          <Text
+            style={styles.heightUnit}
+            allowFontScaling
+            maxFontSizeMultiplier={1.1}>
+            feet
+          </Text>
         </View>
         <View style={styles.heightInputWrap}>
           <TextInput
@@ -319,12 +367,24 @@ export default function CompleteProfileScreen({navigation}) {
             style={styles.heightInput}
             keyboardType="numeric"
             maxLength={2}
+            allowFontScaling
+            maxFontSizeMultiplier={1.1}
           />
-          <Text style={styles.heightUnit}>inches</Text>
+          <Text
+            style={styles.heightUnit}
+            allowFontScaling
+            maxFontSizeMultiplier={1.1}>
+            inches
+          </Text>
         </View>
       </View>
 
-      <Text style={styles.sectionLabel}>Weight (lbs)</Text>
+      <Text
+        style={styles.sectionLabel}
+        allowFontScaling
+        maxFontSizeMultiplier={1.2}>
+        Weight (lbs)
+      </Text>
       <TextInput
         placeholder="Weight in pounds"
         placeholderTextColor={colors.medium}
@@ -332,9 +392,16 @@ export default function CompleteProfileScreen({navigation}) {
         onChangeText={v => handle('weight', v.replace(/[^0-9]/g, ''))}
         style={styles.input}
         keyboardType="numeric"
+        allowFontScaling
+        maxFontSizeMultiplier={1.1}
       />
 
-      <Text style={styles.sectionLabel}>Are you a smoker?</Text>
+      <Text
+        style={styles.sectionLabel}
+        allowFontScaling
+        maxFontSizeMultiplier={1.2}>
+        Are you a smoker?
+      </Text>
       <RadioButtonGroup
         options={['Yes', 'No']}
         selectedOption={form.userSmokingStatus}
@@ -345,18 +412,24 @@ export default function CompleteProfileScreen({navigation}) {
         <TouchableOpacity
           onPress={() => setUi(s => ({...s, step: 1}))}
           style={styles.backLink}>
-          <Text style={styles.backLinkText}>Back</Text>
+          <Text
+            style={styles.backLinkText}
+            allowFontScaling
+            maxFontSizeMultiplier={1.1}>
+            Back
+          </Text>
         </TouchableOpacity>
 
-        <View style={{width: 140, alignSelf: 'flex-end'}}>
-          <AppButton
-            title={ui.loading ? 'Saving...' : 'Save & Continue'}
-            color={colors.primaryColor}
-            onPress={saveAndContinue}
-            disabled={ui.loading}
-            loading={ui.loading}
-          />
-        </View>
+        {/* Make Save & Continue behave like a compact, content-width button */}
+        <AppButton
+          title={ui.loading ? 'Saving...' : 'Save & Continue'}
+          color="primaryColor"
+          onPress={saveAndContinue}
+          disabled={ui.loading}
+          loading={ui.loading}
+          compact
+          fullWidth={false}
+        />
       </View>
     </>
   );
@@ -375,8 +448,16 @@ export default function CompleteProfileScreen({navigation}) {
             source={require('../assets/Aime_Blue_Transparent_72ppi.png')}
             resizeMode="contain"
           />
-          <Text style={styles.title}>Complete Your Profile</Text>
-          <Text style={styles.tagline}>
+          <Text
+            style={styles.title}
+            allowFontScaling
+            maxFontSizeMultiplier={1.2}>
+            Complete Your Profile
+          </Text>
+          <Text
+            style={styles.tagline}
+            allowFontScaling
+            maxFontSizeMultiplier={1.1}>
             We need a few details for accurate measurements.
           </Text>
         </View>
@@ -435,6 +516,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 10,
+    gap: 10,
   },
   genderBtn: {
     flex: 1,
@@ -459,7 +541,11 @@ const styles = StyleSheet.create({
   },
   genderText: {fontSize: 16, color: colors.dark},
   genderTextSelected: {color: colors.white, fontWeight: '500'},
-  heightRow: {flexDirection: 'row', justifyContent: 'space-between', gap: 10},
+  heightRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
   heightInputWrap: {flexDirection: 'row', alignItems: 'center', width: '48%'},
   heightInput: {
     backgroundColor: colors.white,
@@ -500,6 +586,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 10,
+    gap: 12,
   },
   backLink: {paddingVertical: 10},
   backLinkText: {
@@ -507,8 +594,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textDecorationLine: 'underline',
   },
-
-  /* NEW: checkbox styles */
   checkRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',

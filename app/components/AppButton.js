@@ -1,27 +1,17 @@
-// Custom Button Component for App
+////////////////Font Increase Limit Fix
+
+// components/AppButton.js
 import React, {useState, useEffect} from 'react';
 import {
-  StyleSheet,
   Text,
   TouchableOpacity,
   Dimensions,
   Platform,
+  ActivityIndicator,
+  View,
 } from 'react-native';
 import colors from '../config/colors';
 
-/**
- * AppButton - A customizable responsive button component
- *
- * @param {string} title - Text to display on the button
- * @param {function} onPress - Callback function to handle button press
- * @param {string} color - Background color key from colors config (default: "primaryColor")
- * @param {string} size - Button size: "small", "medium", "large" (default: "medium")
- * @param {boolean} disabled - Whether the button is disabled (default: false)
- * @param {object} customStyle - Custom style overrides for the button
- * @param {object} customTextStyle - Custom style overrides for the text
- *
- * @returns {JSX.Element} - Rendered button component
- */
 const AppButton = ({
   title,
   onPress,
@@ -30,117 +20,128 @@ const AppButton = ({
   disabled = false,
   customStyle = {},
   customTextStyle = {},
+  loading = false,
+  // NEW:
+  compact = false, // keeps height stable under large text
+  fullWidth = true, // false makes it behave like a content-width button
 }) => {
   const [dimensions, setDimensions] = useState(Dimensions.get('window'));
 
   useEffect(() => {
-    const subscription = Dimensions.addEventListener('change', ({window}) => {
+    const sub = Dimensions.addEventListener('change', ({window}) => {
       setDimensions(window);
     });
-    return () => subscription?.remove();
+    return () => sub?.remove();
   }, []);
 
-  // Responsive calculations
-  const isSmallScreen = dimensions.width < 375;
-  const isMediumScreen = dimensions.width >= 375 && dimensions.width < 414;
-  const isLargeScreen = dimensions.width >= 414;
+  const isSmall = dimensions.width < 375;
+  const isMedium = dimensions.width >= 375 && dimensions.width < 414;
+  const scale = v => (isSmall ? v * 0.9 : isMedium ? v : v * 1.1);
 
-  // Base font scaling
-  const getScaledSize = size => {
-    if (isSmallScreen) return size * 0.9;
-    if (isMediumScreen) return size;
-    return size * 1.1;
-  };
-
-  // Size configurations
   const sizeConfig = {
     small: {
-      paddingVertical: getScaledSize(Platform.OS === 'ios' ? 12 : 10),
-      paddingHorizontal: getScaledSize(16),
-      fontSize: getScaledSize(14),
-      borderRadius: getScaledSize(12),
-      marginVertical: getScaledSize(6),
+      pv: scale(Platform.OS === 'ios' ? 12 : 10),
+      ph: scale(16),
+      fs: scale(14),
+      br: scale(12),
+      mv: scale(6),
+      mh: 44,
     },
     medium: {
-      paddingVertical: getScaledSize(Platform.OS === 'ios' ? 15 : 13),
-      paddingHorizontal: getScaledSize(20),
-      fontSize: getScaledSize(16),
-      borderRadius: getScaledSize(15),
-      marginVertical: getScaledSize(8),
+      pv: scale(Platform.OS === 'ios' ? 14 : 12),
+      ph: scale(18),
+      fs: scale(16),
+      br: scale(14),
+      mv: scale(8),
+      mh: 48,
     },
     large: {
-      paddingVertical: getScaledSize(Platform.OS === 'ios' ? 18 : 16),
-      paddingHorizontal: getScaledSize(24),
-      fontSize: getScaledSize(18),
-      borderRadius: getScaledSize(18),
-      marginVertical: getScaledSize(10),
+      pv: scale(Platform.OS === 'ios' ? 16 : 14),
+      ph: scale(22),
+      fs: scale(18),
+      br: scale(16),
+      mv: scale(10),
+      mh: 52,
     },
   };
+  const S = sizeConfig[size] || sizeConfig.medium;
 
-  const currentSize = sizeConfig[size] || sizeConfig.medium;
+  // Compact mode: slightly less vertical padding to keep height stable
+  const pv = compact ? Math.max(10, S.pv - 2) : S.pv;
 
-  // Dynamic styles based on screen size and platform
-  const responsiveStyles = {
-    button: {
-      backgroundColor: disabled
-        ? colors.disabled || '#cccccc'
-        : colors[color] || colors.primaryColor,
-      borderRadius: currentSize.borderRadius,
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingVertical: currentSize.paddingVertical,
-      paddingHorizontal: currentSize.paddingHorizontal,
-      width: '100%',
-      marginVertical: currentSize.marginVertical,
-      opacity: disabled ? 0.6 : 1,
-      // Platform-specific shadow
-      ...Platform.select({
-        ios: {
-          shadowColor: '#000',
-          shadowOffset: {
-            width: 0,
-            height: 2,
-          },
-          shadowOpacity: disabled ? 0 : 0.1,
-          shadowRadius: 3.84,
-        },
-        android: {
-          elevation: disabled ? 0 : 2,
-        },
-      }),
-      // Ensure proper touch target size (minimum 44x44 on iOS, 48x48 on Android)
-      minHeight: Platform.OS === 'ios' ? 44 : 48,
-    },
-    text: {
-      color: disabled
-        ? colors.textDisabled || '#888888'
-        : colors.white || '#ffffff',
-      fontSize: currentSize.fontSize,
-      textTransform: 'uppercase',
-      fontWeight: Platform.OS === 'ios' ? '600' : 'bold',
-      fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-medium',
-      textAlign: 'center',
-      // Android-specific text alignment
-      includeFontPadding: false,
-      textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
-      // Responsive line height
-      lineHeight: currentSize.fontSize * (Platform.OS === 'ios' ? 1.2 : 1.3),
-    },
+  const backgroundColor =
+    disabled || loading
+      ? colors.disabled || '#cccccc'
+      : colors[color] || colors.primaryColor;
+
+  const buttonStyle = {
+    backgroundColor,
+    borderRadius: S.br,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: pv,
+    paddingHorizontal: S.ph,
+    // Full width only when you want block buttons in column layouts
+    width: fullWidth ? '100%' : undefined,
+    alignSelf: fullWidth ? 'stretch' : 'auto',
+    marginVertical: S.mv,
+    opacity: disabled ? 0.6 : 1,
+    minHeight: S.mh, // fixed minimum touch target
+    flexShrink: fullWidth ? 0 : 1, // allow shrinking in rows
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: disabled ? 0 : 0.1,
+        shadowRadius: 3.84,
+      },
+      android: {elevation: disabled ? 0 : 2},
+    }),
+    flexDirection: 'row',
+    gap: 8,
+  };
+
+  const textStyle = {
+    color: disabled
+      ? colors.textDisabled || '#888888'
+      : colors.white || '#ffffff',
+    fontSize: S.fs, // base font size (we’ll cap actual scaling below)
+    textTransform: 'uppercase',
+    fontWeight: Platform.OS === 'ios' ? '600' : 'bold',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-medium',
+    textAlign: 'center',
+    includeFontPadding: false,
+    textAlignVertical: Platform.OS === 'android' ? 'center' : 'auto',
+    lineHeight: S.fs * (Platform.OS === 'ios' ? 1.2 : 1.3),
   };
 
   return (
     <TouchableOpacity
-      style={[responsiveStyles.button, customStyle]}
-      onPress={disabled ? undefined : onPress}
-      activeOpacity={disabled ? 1 : 0.7}
-      disabled={disabled}
-      // Accessibility improvements
-      accessible={true}
+      style={[buttonStyle, customStyle]}
+      onPress={disabled || loading ? undefined : onPress}
+      activeOpacity={disabled || loading ? 1 : 0.7}
+      disabled={disabled || loading}
+      accessible
       accessibilityRole="button"
       accessibilityLabel={title}
       accessibilityHint={disabled ? 'Button is disabled' : undefined}
-      accessibilityState={{disabled}}>
-      <Text style={[responsiveStyles.text, customTextStyle]}>{title}</Text>
+      accessibilityState={{disabled: disabled || loading, busy: loading}}>
+      {loading ? (
+        <ActivityIndicator size="small" color={colors.white || '#fff'} />
+      ) : (
+        <Text
+          style={[textStyle, customTextStyle]}
+          allowFontScaling
+          // Tighter cap for CTAs so the button height doesn't balloon
+          maxFontSizeMultiplier={compact ? 1.05 : 1.2}
+          // Keep it to a single line and shrink slightly if needed
+          numberOfLines={1}
+          adjustsFontSizeToFit={compact}
+          minimumFontScale={compact ? 0.9 : undefined}
+          ellipsizeMode="tail">
+          {title}
+        </Text>
+      )}
     </TouchableOpacity>
   );
 };
