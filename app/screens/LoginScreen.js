@@ -1,3 +1,4 @@
+// export default LoginScreen;
 ////Font Increase Limit Fix
 // LoginScreen.js
 import React, {useState, useRef, useEffect} from 'react';
@@ -14,7 +15,6 @@ import {
   Platform,
   ActivityIndicator,
   Dimensions,
-  Linking,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -23,6 +23,7 @@ import colors from '../config/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Auth, signIn, resetPassword} from 'aws-amplify/auth'; // adjust your import if different
 import * as Keychain from 'react-native-keychain';
+// import {showExternalContentDisclosure} from '../utils/externalContentLink';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const STORAGE_KEY = '@login_credentials';
@@ -203,16 +204,9 @@ const LoginScreen = ({navigation}) => {
     }
   };
 
-  const handleRegisterPress = async () => {
-    try {
-      await Linking.openURL('https://aimescan.com/member/register/');
-    } catch {
-      Alert.alert(
-        'Error',
-        'Could not open registration page. Please try again.',
-      );
-    }
-  };
+  // const handleRegisterPress = () => {
+  //   showExternalContentDisclosure();
+  // };
 
   const updateFormData = (field, value) => {
     setFormData(prev => ({...prev, [field]: value}));
@@ -382,7 +376,7 @@ const LoginScreen = ({navigation}) => {
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
+            {/* <TouchableOpacity
               onPress={handleRegisterPress}
               style={styles.registerContainer}
               disabled={isLoading}>
@@ -390,9 +384,10 @@ const LoginScreen = ({navigation}) => {
                 style={[styles.registerText, {fontSize: 14}]}
                 allowFontScaling={true}
                 maxFontSizeMultiplier={1.1}>
-                Don’t have an account? <Text style={styles.link}>Register</Text>
+                Need access?{' '}
+                <Text style={styles.link}>Continue to our website</Text>
               </Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

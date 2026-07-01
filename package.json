@@ -1,6 +1,6 @@
 {
   "name": "AIME",
-  "version": "0.7.3",
+  "version": "0.7.6",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
