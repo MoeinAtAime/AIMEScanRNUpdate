@@ -5,7 +5,6 @@ import React from 'react';
 import {Platform, Text} from 'react-native';
 import {createStackNavigator} from '@react-navigation/stack';
 
-import RegisterScreen from '../screens/RegisterScreen';
 import LoginScreen from '../screens/LoginScreen';
 import AppNavigator from '../navigation/AppNavigator';
 import WelcomeScreen from '../screens/WelcomeScreen';

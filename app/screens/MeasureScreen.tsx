@@ -67,8 +67,6 @@ import {fetchUserAttributes} from 'aws-amplify/auth';
 import colors from '../config/colors';
 import KeepAwake from 'react-native-keep-awake';
 
-import {generateClient} from 'aws-amplify/api';
-import {createUserData} from '../../src/graphql/mutations';
 import MotivationalMessage from '../components/MotivationalMessage';
 
 import Orientation from 'react-native-orientation-locker';
@@ -219,8 +217,6 @@ function MeasureScreen() {
 
   const [isLoading, setIsLoading] = useState(false);
   const hasNavigated = useRef(false);
-
-  const client = generateClient();
 
   const [infoModalVisible, setInfoModalVisible] = useState(false);
 
@@ -881,30 +877,6 @@ function MeasureScreen() {
     const LOWHEMOGLOBINRISK = String(lowHemoglobinRisk);
     const NORMALIZEDSTRESSINDEX = String(normalizedStressIndex);
 
-    const filterWithPreservedData = data => {
-      const now = new Date();
-      const manuallyLoadedDates = {};
-
-      data.forEach(item => {
-        const itemDate = new Date(item.timeStamp);
-        const daysDifference = (now - itemDate) / (1000 * 60 * 60 * 24);
-        if (daysDifference > 365) {
-          const dateKey = new Date(itemDate).toLocaleDateString('en-US');
-          manuallyLoadedDates[dateKey] = true;
-        }
-      });
-
-      return data.filter(item => {
-        const itemDate = new Date(item.timeStamp);
-        const daysDifference = (now - itemDate) / (1000 * 60 * 60 * 24);
-        const dateKey = new Date(itemDate).toLocaleDateString('en-US');
-        return (
-          !isNaN(itemDate.getTime()) &&
-          (daysDifference <= 365 || manuallyLoadedDates[dateKey])
-        );
-      });
-    };
-
     try {
       const existingData = await AsyncStorage.getItem('scanResults');
       const parsedData = existingData ? JSON.parse(existingData) : [];
@@ -953,25 +925,15 @@ function MeasureScreen() {
         userDeviceInfo: Platform.OS,
       };
 
+      // Store scan results on-device only, kept permanently (no backend sync).
       const updatedData = [...parsedData, newScanResult];
-      const filteredData =
-        updatedData.length > 0
-          ? filterWithPreservedData(updatedData)
-          : [newScanResult];
 
-      await AsyncStorage.setItem('scanResults', JSON.stringify(filteredData));
-
-      const client = generateClient();
-      await client.graphql({
-        query: createUserData,
-        variables: {input: newScanResult},
-        authMode: 'userPool',
-      });
+      await AsyncStorage.setItem('scanResults', JSON.stringify(updatedData));
 
       terminateSession();
       resetParameters();
 
-      console.log('Results saved to backend and local storage');
+      console.log('Results saved to local storage');
     } catch (error) {
       console.error('Error saving data:', error);
     }

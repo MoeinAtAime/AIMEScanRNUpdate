@@ -22,8 +22,6 @@ import {
   useFocusEffect,
 } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {generateClient} from 'aws-amplify/api';
-import {createUserData} from '../../src/graphql/mutations';
 
 interface RouteParams {
   results: any;
@@ -157,8 +155,6 @@ const ScanMeasurementResults = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [dimensions, setDimensions] = useState(Dimensions.get('window'));
 
-  const client = generateClient();
-
   // Handle Android back → go to Home tab
   useFocusEffect(
     useCallback(() => {
@@ -262,42 +258,13 @@ const ScanMeasurementResults = () => {
       userDeviceInfo: Platform.OS,
     };
 
-    // keep last 365d and any dates manually loaded
-    const filterWithPreservedData = (data: any[]) => {
-      const now = new Date();
-      const preserved: Record<string, boolean> = {};
-
-      data.forEach(item => {
-        const d = new Date(item.timeStamp);
-        const ageDays = (now.getTime() - d.getTime()) / 86400000;
-        if (ageDays > 365) {
-          preserved[d.toLocaleDateString('en-US')] = true;
-        }
-      });
-
-      return data.filter(item => {
-        const d = new Date(item.timeStamp);
-        const ageDays = (now.getTime() - d.getTime()) / 86400000;
-        const key = d.toLocaleDateString('en-US');
-        return !isNaN(d.getTime()) && (ageDays <= 365 || preserved[key]);
-      });
-    };
-
     try {
+      // Store scan results on-device only, kept permanently (no backend sync).
       const existing = await AsyncStorage.getItem('scanResults');
       const parsed = existing ? JSON.parse(existing) : [];
-      const merged = [...parsed, newScanResult];
-      const filtered = merged.length
-        ? filterWithPreservedData(merged)
-        : [newScanResult];
+      const updated = [...parsed, newScanResult];
 
-      await AsyncStorage.setItem('scanResults', JSON.stringify(filtered));
-
-      await client.graphql({
-        query: createUserData,
-        variables: {input: newScanResult},
-        authMode: 'userPool',
-      });
+      await AsyncStorage.setItem('scanResults', JSON.stringify(updated));
 
       navigation.reset({
         index: 0,

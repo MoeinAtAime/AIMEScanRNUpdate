@@ -4,7 +4,6 @@ import {
   View,
   Text,
   ScrollView,
-  Alert,
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
@@ -19,7 +18,6 @@ import {useNavigation, useFocusEffect} from '@react-navigation/native';
 
 import {ErrorBoundary} from '../components/ErrorBoundary';
 import CustomCalendar from '../components/CustomCalendar';
-import fetchAllResultsLastYear from '../api/fetchAllResultsLastYear';
 import colors from '../config/colors';
 
 const {width, height} = Dimensions.get('window');
@@ -171,7 +169,7 @@ const ScanCard = React.memo(({scan, onPress}) => {
   );
 });
 
-const EmptyState = ({hasAnyData, loading, onFetch}) => {
+const EmptyState = ({hasAnyData}) => {
   return (
     <View
       style={styles.emptyStateContainer}
@@ -187,7 +185,7 @@ const EmptyState = ({hasAnyData, loading, onFetch}) => {
           style={styles.emptyStateIcon}
           allowFontScaling
           maxFontSizeMultiplier={FONT_CAPS.heading}>
-          {hasAnyData ? '📅' : '☁️'}
+          {hasAnyData ? '📅' : '📊'}
         </Text>
       </View>
 
@@ -197,7 +195,7 @@ const EmptyState = ({hasAnyData, loading, onFetch}) => {
         allowFontScaling
         maxFontSizeMultiplier={FONT_CAPS.title}
         adjustsFontSizeToFit>
-        {hasAnyData ? 'No scans on this date' : 'Welcome to Your History'}
+        {hasAnyData ? 'No scans on this date' : 'No Scans Yet'}
       </Text>
 
       <Text
@@ -207,49 +205,10 @@ const EmptyState = ({hasAnyData, loading, onFetch}) => {
         maxFontSizeMultiplier={FONT_CAPS.body}
         adjustsFontSizeToFit>
         {hasAnyData
-          ? 'Try selecting a different date or sync your data'
-          : 'Load your scan history to view all your past results'}
+          ? 'Try selecting a different date'
+          : 'Complete a face scan to see your results here'}
       </Text>
 
-      <TouchableOpacity
-        style={styles.primaryFetchButton}
-        onPress={onFetch}
-        disabled={loading}
-        activeOpacity={0.8}
-        accessibilityRole="button"
-        accessibilityState={{disabled: loading}}
-        accessibilityLabel="Load older data"
-        accessibilityHint="Downloads up to 365 days of scan history">
-        {loading ? (
-          <ActivityIndicator color="#fff" size="small" />
-        ) : (
-          <>
-            <Text
-              style={styles.primaryFetchButtonIcon}
-              allowFontScaling
-              maxFontSizeMultiplier={FONT_CAPS.button}>
-              ☁️
-            </Text>
-            <Text
-              style={styles.primaryFetchButtonText}
-              allowFontScaling
-              maxFontSizeMultiplier={FONT_CAPS.button}>
-              Load Older Data
-            </Text>
-          </>
-        )}
-      </TouchableOpacity>
-
-      {!hasAnyData && (
-        <Text
-          style={styles.emptyStateHint}
-          allowFontScaling
-          maxFontSizeMultiplier={FONT_CAPS.small}
-          numberOfLines={2}
-          adjustsFontSizeToFit>
-          This will download up to 365 days of scan history
-        </Text>
-      )}
     </View>
   );
 };
@@ -332,50 +291,6 @@ const HistoryContent = () => {
       filteredData: filtered,
     });
   };
-
-  const handleFetchLastYear = useCallback(async () => {
-    if (state.loading) return;
-    updateState({loading: true});
-
-    try {
-      const results = await fetchAllResultsLastYear();
-      if (results.length === 0) {
-        Alert.alert(
-          'No Data Found',
-          'No scan results were found for the last year.',
-        );
-        updateState({loading: false});
-        return;
-      }
-      await AsyncStorage.setItem(
-        STORAGE_KEYS.SCAN_RESULTS,
-        JSON.stringify(results),
-      );
-      const map = {};
-      results.forEach(scan => {
-        const d = new Date(scan.timeStamp).toLocaleDateString('en-US');
-        map[d] = true;
-      });
-      await AsyncStorage.setItem(
-        STORAGE_KEYS.SCANNED_DATES,
-        JSON.stringify(map),
-      );
-      updateState({scannedDates: map});
-      const filtered = filterDataByDate(state.selectedDate, results);
-      updateState({savedData: results, filteredData: filtered});
-      Alert.alert(
-        'Success',
-        `Successfully loaded ${results.length} scan${
-          results.length !== 1 ? 's' : ''
-        }.`,
-      );
-    } catch (err) {
-      console.error('Error fetching last year data:', err);
-      Alert.alert('Error', 'Failed to fetch results. Please try again later.');
-    } finally {
-      updateState({loading: false});
-    }
-  }, [state.selectedDate, state.loading, filterDataByDate]);
 
   const onRefresh = useCallback(async () => {
     updateState({refreshing: true});
@@ -464,11 +379,7 @@ const HistoryContent = () => {
                 />
               ))
             ) : (
-              <EmptyState
-                hasAnyData={state.savedData.length > 0}
-                loading={state.loading}
-                onFetch={handleFetchLastYear}
-              />
+              <EmptyState hasAnyData={state.savedData.length > 0} />
             )}
           </ScrollView>
 

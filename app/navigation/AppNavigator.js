@@ -26,7 +26,6 @@ import ScanResultsScreen from '../screens/ScanResultsScreen'; // <-- new screen 
 import ProfileEdit from '../screens/ProfileEdit';
 import DeleteMyAccount from '../screens/DeleteMyAccount';
 import CompleteProfileScreen from '../screens/CompleteProfileScreen';
-// import PulseRateTrendScreen from '../screens/PulseRateTrendScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -327,14 +326,6 @@ const AppNavigator = () => (
       component={CompleteProfileScreen}
       options={{title: 'Complete Profile', headerTitleAlign: 'center'}}
     />
-    {/* <Stack.Screen
-      name="PulseRateTrend"
-      component={PulseRateTrendScreen}
-      options={{
-        title: 'Pulse Rate Trend',
-        headerTitleAlign: 'center',
-      }}
-    /> */}
   </Stack.Navigator>
 );
 
