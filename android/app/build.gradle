@@ -112,11 +112,16 @@ android {
             keyPassword 'android'
         }
         /// added for release signing
-         release {
-            storeFile file('Aime-release-key.keystore')
-            storePassword 'MobinaAnitaMelorin#1350'
-            keyAlias 'Aime-key-alias'
-            keyPassword 'MobinaAnitaMelorin#1350'
+        // Credentials come from ~/.gradle/gradle.properties (untracked), NOT this file.
+        // Required props: MYAPP_UPLOAD_STORE_FILE, MYAPP_UPLOAD_KEY_ALIAS,
+        // MYAPP_UPLOAD_STORE_PASSWORD, MYAPP_UPLOAD_KEY_PASSWORD.
+        release {
+            if (project.hasProperty('MYAPP_UPLOAD_STORE_FILE')) {
+                storeFile file(MYAPP_UPLOAD_STORE_FILE)
+                storePassword MYAPP_UPLOAD_STORE_PASSWORD
+                keyAlias MYAPP_UPLOAD_KEY_ALIAS
+                keyPassword MYAPP_UPLOAD_KEY_PASSWORD
+            }
         }
     }
     buildTypes {
